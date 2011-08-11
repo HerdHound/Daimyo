@@ -220,8 +220,7 @@ card.load(function(err) {
 
 <p>The card object has all the fields populated. There are also two new fields:</p>
 
-<pre><code>+ messages: contains any Samurai gateway messages about the card
-+ method: contains meta-information about the payment method</code></pre>
+<ul><li>messages: contains any Samurai gateway messages about the card</li><li>method: contains meta-information about the payment method</li></ul>
 
 <p>See the API documentation for details on what these fields contain.</p>
 
@@ -237,6 +236,43 @@ card.city = 'Fooville';
 card.update(function(err) {
   // Handle errors here
 });</code></pre>
+
+<h3>Retention and redaction</h3>
+
+<p>Samurai has a built-in vault that can safely store your payment methods. Well,
+they aren't yours, but... you know what I mean. :) Usage of this vault is
+pretty much automatic. As soon as you create a new card, it is stored in the
+vault.</p>
+
+<p>By default, the stored payment methods will be deleted after 48 hours. If you
+wish to keep the payment methods stored for longer periods, you can use the
+<code>retain()</code> method. Let's say you have a newly created card. To retain it,
+simply instruct the Samurai to do so:</p>
+
+<pre><code>card.retain(function(err) {
+  // Error handling here
+  // The card now has a method property, 
+  // which contains metadata about
+  // the payment method. It has a `retained`
+  // property which is now set to true:
+  console.log(card.method.retained); // =&gt; true
+});</code></pre>
+
+<p>When your user supplies you a new card, or simply wants you to remove their 
+records, use the <code>redact()</code> method to have the card removed from the Samurai
+vault.</p>
+
+<pre><code>card.redact(function(err) {
+   // The card.method.retained is still true, but
+   // card.method.redacted is now also true.
+});</code></pre>
+
+<p>Generally, you should not keep using a redacted payment method, so make sure
+you check if the <code>card.method.redacted</code> is <code>true</code>. Updating the card data is
+usually more efficient using the <code>update()</code> method. While it <em>is</em> more
+effiicient, if you are using the transparent redirect method, you should 
+redact the old card, and let the user enter a new one. Only use <code>update()</code> if 
+you are using the server-to-server method.</p>
 
 <p>REST OF THE DOCS IS ON TODO LIST, SORRY!</p></td><td></td></tr><tr class="filename"><td><h2 id="lib/config.js"><a href="#">config</a></h2></td><td>lib/config.js</td></tr><tr class="code">
 <td class="docs">
@@ -745,89 +781,12 @@ card.load(function(err) {
 <td class="code">
 <pre><code><span class="class">Card</span>.<span class="variable">prototype</span>.<span class="variable">load</span> = <span class="keyword">function</span>(<span class="variable">callback</span>) {
   <span class="keyword">var</span> <span class="variable">self</span> = <span class="this">this</span>;
-  <span class="keyword">var</span> <span class="variable">loadRecipes</span> = {
-    <span class="string">'payment_method_token'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'created_at'</span>: <span class="variable">xmlutils</span>.<span class="variable">toDate</span>,
-    <span class="string">'updated_at'</span>: <span class="variable">xmlutils</span>.<span class="variable">toDate</span>,
-    <span class="string">'is_retained'</span>: <span class="variable">xmlutils</span>.<span class="variable">toBool</span>,
-    <span class="string">'is_redacted'</span>: <span class="variable">xmlutils</span>.<span class="variable">toBool</span>,
-    <span class="string">'is_sensitive_data_valid'</span>: <span class="variable">xmlutils</span>.<span class="variable">toBool</span>,
-    <span class="string">'last_four_digits'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'card_type'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'first_name'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'last_name'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'expiry_month'</span>: <span class="variable">xmlutils</span>.<span class="variable">toInt</span>,
-    <span class="string">'expiry_year'</span>: <span class="variable">xmlutils</span>.<span class="variable">toInt</span>,
-    <span class="string">'address_1'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'address_2'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'city'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'state'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'zip'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>,
-    <span class="string">'country'</span>: <span class="variable">xmlutils</span>.<span class="variable">toString</span>
-  };
 
-  <span class="keyword">if</span> (!<span class="this">this</span>.<span class="variable">token</span>) {
-    <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Cannot load payment method without token'</span>, <span class="keyword">null</span>));
-  }
+  <span class="variable">self</span>.<span class="variable">_rejectNoToken</span>();
 
-  <span class="variable">authpost</span>.<span class="variable">makeRequest</span>({
+  <span class="variable">self</span>.<span class="variable">_executeRequest</span>({
     <span class="variable">path</span>: <span class="variable">self</span>.<span class="variable">_getTokenPath</span>()
-  }, <span class="keyword">function</span>(<span class="variable">err</span>, <span class="variable">res</span>) {
-    <span class="keyword">var</span> <span class="variable">data</span>;
-    
-    <span class="keyword">if</span> (<span class="variable">err</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="variable">err</span>.<span class="variable">category</span> === <span class="string">'system'</span>) {
-        <span class="variable">callback</span>(<span class="variable">err</span>);
-        <span class="keyword">return</span>;
-    }
-
-    <span class="keyword">if</span> (<span class="variable">err</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="variable">err</span>.<span class="variable">category</span> == <span class="string">'gateway'</span>) {
-      <span class="variable">self</span>.<span class="variable">messages</span> = <span class="variable">messages</span>.<span class="variable">translateAll</span>(<span class="variable">err</span>.<span class="variable">details</span>, <span class="string">'en_US'</span>);
-    }
-
-    <span class="keyword">if</span> (<span class="variable">res</span>.<span class="variable">status</span> !== <span class="number integer">200</span>) {
-      <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(
-        <span class="string">'system'</span>, 
-        <span class="string">'Gateway responded with non-200 status'</span>, 
-        {<span class="variable">status</span>: <span class="variable">res</span>.<span class="variable">status</span>, <span class="variable">message</span>: <span class="variable">res</span>.<span class="variable">body</span>}
-      ));
-      <span class="keyword">return</span>;
-    }
-    
-    <span class="variable">data</span> = <span class="variable">xmlutils</span>.<span class="variable">extractData</span>(<span class="variable">res</span>.<span class="variable">body</span>, <span class="variable">loadRecipes</span>);
-
-    <span class="keyword">if</span> (<span class="variable">data</span>.<span class="variable">payment_method_token</span> !== <span class="variable">self</span>.<span class="variable">token</span>) {
-      <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(
-        <span class="string">'method'</span>,  
-    -   <span class="string">'Loaded token does not equal the token that was requested'</span>, 
-        {<span class="variable">requested</span>: <span class="variable">self</span>.<span class="variable">token</span>, <span class="variable">got</span>: <span class="variable">data</span>.<span class="variable">payment_method_token</span>}
-      ));
-    }
-
-    <span class="variable">self</span>.<span class="variable">method</span> = {};
-    <span class="variable">self</span>.<span class="variable">method</span>.<span class="variable">valid</span> = <span class="variable">data</span>.<span class="variable">is_sensitive_data_valid</span>;
-    <span class="variable">self</span>.<span class="variable">method</span>.<span class="variable">updatedAt</span> = <span class="variable">data</span>.<span class="variable">updated_at</span>;
-    <span class="variable">self</span>.<span class="variable">method</span>.<span class="variable">createdAt</span> = <span class="variable">data</span>.<span class="variable">created_at</span>;
-    <span class="variable">self</span>.<span class="variable">method</span>.<span class="variable">retained</span> = <span class="variable">data</span>.<span class="variable">is_retained</span>;
-    <span class="variable">self</span>.<span class="variable">method</span>.<span class="variable">redacted</span> = <span class="variable">data</span>.<span class="variable">is_redacted</span>;
-    <span class="variable">self</span>.<span class="variable">method</span>.<span class="variable">custom</span> = {};
-    <span class="variable">self</span>.<span class="variable">last4</span> = <span class="variable">data</span>.<span class="variable">last_four_digits</span>;
-    <span class="variable">self</span>.<span class="variable">issuer</span> = <span class="variable">data</span>.<span class="variable">card_type</span>;
-    <span class="variable">self</span>.<span class="variable">year</span> = <span class="variable">data</span>.<span class="variable">expiry_year</span>;
-    <span class="variable">self</span>.<span class="variable">month</span> = <span class="variable">data</span>.<span class="variable">expiry_month</span>;
-    <span class="variable">self</span>.<span class="variable">firstName</span> = <span class="variable">data</span>.<span class="variable">first_name</span>;
-    <span class="variable">self</span>.<span class="variable">lastName</span> = <span class="variable">data</span>.<span class="variable">last_name</span>;
-    <span class="variable">self</span>.<span class="variable">address1</span> = <span class="variable">data</span>.<span class="variable">address_1</span>;
-    <span class="variable">self</span>.<span class="variable">address2</span> = <span class="variable">data</span>.<span class="variable">address_2</span>;
-    <span class="variable">self</span>.<span class="variable">city</span> = <span class="variable">data</span>.<span class="variable">city</span>;
-    <span class="variable">self</span>.<span class="variable">state</span> = <span class="variable">data</span>.<span class="variable">state</span>;
-    <span class="variable">self</span>.<span class="variable">zip</span> = <span class="variable">data</span>.<span class="variable">zip</span>;
-    <span class="variable">self</span>.<span class="variable">country</span> = <span class="variable">data</span>.<span class="variable">country</span>;
-
-    <span class="variable">self</span>.<span class="variable">_resetDirty</span>();
-
-    <span class="variable">callback</span>(<span class="keyword">null</span>);
-
-  });
+  }, <span class="variable">callback</span>);
 
 };</code></pre>
 </td>
@@ -869,10 +828,7 @@ loadedCard.update(function(err) {
   <span class="keyword">var</span> <span class="variable">payload</span> = <span class="string">''</span>;
   <span class="keyword">var</span> <span class="variable">self</span> = <span class="this">this</span>;
 
-  <span class="comment">// Throw if no token</span>
-  <span class="keyword">if</span> (!<span class="this">this</span>.<span class="variable">token</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Cannot update payment method without token'</span>, <span class="keyword">null</span>);
-  }
+  <span class="variable">self</span>.<span class="variable">_rejectNoToken</span>();
 
   <span class="comment">// If nothing was updated, just call the callback and pretend it was updated</span>
   <span class="keyword">if</span> (!<span class="variable">self</span>.<span class="variable">_dirty</span>.<span class="variable">length</span>) {
@@ -891,27 +847,79 @@ loadedCard.update(function(err) {
   <span class="comment">// Construct the XML payload</span>
   <span class="variable">payload</span> = <span class="variable">xmlutils</span>.<span class="variable">toXML</span>(<span class="variable">updatedFields</span>, <span class="string">'payment_method'</span>);
 
-  <span class="variable">authpost</span>.<span class="variable">makeRequest</span>({
+  <span class="variable">self</span>.<span class="variable">_executeRequest</span>({
     <span class="variable">path</span>: <span class="variable">self</span>.<span class="variable">_getTokenPath</span>(),
     <span class="variable">method</span>: <span class="string">'PUT'</span>,
     <span class="variable">payload</span>: <span class="variable">payload</span>
-  }, <span class="keyword">function</span>(<span class="variable">err</span>, <span class="variable">res</span>) {
+  }, <span class="variable">callback</span>);
 
-    <span class="keyword">if</span> (<span class="variable">err</span>) {
-      <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Error during load request'</span>, <span class="variable">err</span>));
-    }
+};</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>daimyo.Card.retain()</h2>
 
-    <span class="keyword">if</span> (<span class="variable">res</span>.<span class="variable">status</span> !== <span class="number integer">200</span>) {
-      <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(
-        <span class="string">'system'</span>, 
-        <span class="string">'Gateway responded with non-200 status'</span>, 
-        {<span class="variable">status</span>: <span class="variable">res</span>.<span class="variable">status</span>, <span class="variable">message</span>: <span class="variable">res</span>.<span class="variable">body</span>}
-      ));
-    }
+<p><em>Instructs Samurai to ratain (save permanently) the payment method</em></p>
 
-    <span class="variable">self</span>.<span class="variable">_resetDirty</span>();
-    <span class="variable">callback</span>(<span class="keyword">null</span>);
-  });
+<p>This is simple method that makes the payment method permanent on the 
+gateway. The payment method will be stored for future use after this method
+is called.</p>
+
+<p>By default, payment method that hasn't been retained will be deleted after
+48 hours. You can delete a payment method (redact in Samurai parlance) at 
+any time by calling the <code>redact()</code> method.</p>
+
+<h2></h2>
+
+<ul><li><p><strong>param</strong>: <em>Function</em>  callback Called with err object</p></li></ul>
+</td>
+<td class="code">
+<pre><code><span class="class">Card</span>.<span class="variable">prototype</span>.<span class="variable">retain</span> = <span class="keyword">function</span>(<span class="variable">callback</span>) {
+  <span class="keyword">var</span> <span class="variable">self</span> = <span class="this">this</span>;
+
+  <span class="variable">self</span>.<span class="variable">_rejectNoToken</span>();
+
+  <span class="variable">self</span>.<span class="variable">_executeRequest</span>({
+    <span class="variable">path</span>: <span class="variable">self</span>.<span class="variable">_getTokenPath</span>(<span class="string">'/retain'</span>),
+    <span class="variable">method</span>: <span class="string">'POST'</span>
+  }, <span class="variable">callback</span>);
+
+};</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>daimyo.Card.redact()</h2>
+
+<p><em>Instructs Samurai to redact (delete) the payment method</em></p>
+
+<p>When a user wants to use a new card, you should always redact (delete) the
+existing payment method before accepting the new card. An alternative way is 
+to update the existing card by modifying the billing/card data using the
+<code>update()</code> method.</p>
+
+<p>Updating a card is usually more efficient, as it requires only one request.</p>
+
+<p>Note that the card that is redacted will still have the <code>retained</code> flag 
+set to true in the <code>method</code> property. You should not, and cannot keep 
+using the redacted payment method for transactions.</p>
+
+<h2></h2>
+
+<ul><li><p><strong>param</strong>: <em>Function</em>  callback Called with err object</p></li></ul>
+</td>
+<td class="code">
+<pre><code><span class="class">Card</span>.<span class="variable">prototype</span>.<span class="variable">redact</span> = <span class="keyword">function</span>(<span class="variable">callback</span>) {
+  <span class="keyword">var</span> <span class="variable">self</span> = <span class="this">this</span>;
+
+  <span class="variable">self</span>.<span class="variable">_rejectNoToken</span>();
+
+  <span class="variable">self</span>.<span class="variable">_executeRequest</span>({
+    <span class="variable">path</span>: <span class="variable">self</span>.<span class="variable">_getTokenPath</span>(<span class="string">'/redact'</span>),
+    <span class="variable">method</span>: <span class="string">'POST'</span>
+  }, <span class="variable">callback</span>);
+
 };
 
 <span class="variable">daimyo</span>.<span class="class">Card</span> = <span class="class">Card</span>;
@@ -1576,6 +1584,16 @@ is set to <code>text/xml</code>.</p>
 
 <p>Translation of various gateway error messages to human-readable format.</p>
 
+<p>All error messages generated by Samurai gateway are translated using the
+<code>messages.translateAll</code> and <code>messages.translate</code> methods. The former 
+translates all messages returned by <code>authpost.makeRequest</code> method, and the
+latter translates individual messages.</p>
+
+<p>In either case, what we end up with is a mapping between fields and 
+messages. Depending on what you are trying to do, the fields can be card
+data fields, transaction details fields, or virtual fields such as 
+'gateway', or 'bank'.</p>
+
 <ul><li><strong>author</strong>: <em>Branko</em>
 Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
 (see LICENSE)</li></ul>
@@ -1622,19 +1640,29 @@ payment processing workflow, rather than a field.</p>
 </td>
 <td class="code">
 <pre><code><span class="variable">msg</span>.<span class="variable">translateAll</span> = <span class="keyword">function</span>(<span class="variable">messages</span>, <span class="variable">lang</span>) {
-  <span class="keyword">var</span> <span class="variable">translated</span> = <span class="variable">messages</span>.<span class="variable">map</span>(<span class="keyword">function</span>(<span class="variable">message</span>) {
-    <span class="keyword">return</span> <span class="variable">msg</span>.<span class="variable">translate</span>(<span class="variable">message</span>, <span class="variable">lang</span>);
+  <span class="keyword">var</span> <span class="variable">errors</span> = <span class="variable">messages</span>.<span class="variable">filter</span>(<span class="keyword">function</span>(<span class="variable">item</span>) {
+    <span class="keyword">return</span> <span class="variable">item</span>.<span class="variable">cls</span> === <span class="string">'error'</span>;
   });
-  <span class="keyword">var</span> <span class="variable">translations</span> = {};
-  <span class="variable">translated</span>.<span class="variable">forEach</span>(<span class="keyword">function</span>(<span class="variable">message</span>) {
-    <span class="keyword">if</span> (<span class="variable">translations</span>.<span class="variable">hasOwnProperty</span>(<span class="variable">message</span>.<span class="variable">field</span>) &<span class="variable">amp</span>;&<span class="variable">amp</span>; 
-        <span class="variable">translations</span>[<span class="variable">message</span>.<span class="variable">field</span>].<span class="variable">indexOf</span>(<span class="variable">message</span>.<span class="variable">message</span>) &<span class="variable">lt</span>; <span class="number integer">0</span>) {
-      <span class="variable">translations</span>[<span class="variable">message</span>.<span class="variable">field</span>].<span class="variable">push</span>(<span class="variable">message</span>.<span class="variable">message</span>);
-    } <span class="keyword">else</span> {
-      <span class="variable">translations</span>[<span class="variable">message</span>.<span class="variable">field</span>] = [<span class="variable">message</span>.<span class="variable">message</span>];
-    }
+  <span class="keyword">var</span> <span class="variable">info</span> = <span class="variable">messages</span>.<span class="variable">filter</span>(<span class="keyword">function</span>(<span class="variable">item</span>) {
+    <span class="keyword">return</span> <span class="variable">item</span>.<span class="variable">cls</span> === <span class="string">'info'</span>;
   });
-  <span class="keyword">return</span> <span class="variable">translations</span>;
+  <span class="keyword">function</span> <span class="variable">build</span>(<span class="variable">msgs</span>) {
+    <span class="keyword">var</span> <span class="variable">translations</span> = {};
+    <span class="variable">msgs</span>.<span class="variable">forEach</span>(<span class="keyword">function</span>(<span class="variable">message</span>) {
+      <span class="variable">translation</span> = <span class="variable">msg</span>.<span class="variable">translate</span>(<span class="variable">message</span>, <span class="variable">lang</span>);
+      <span class="keyword">if</span> (<span class="variable">translations</span>.<span class="variable">hasOwnProperty</span>(<span class="variable">translation</span>.<span class="variable">field</span>) &<span class="variable">amp</span>;&<span class="variable">amp</span>; 
+          <span class="variable">translations</span>[<span class="variable">translation</span>.<span class="variable">field</span>].<span class="variable">indexOf</span>(<span class="variable">translation</span>.<span class="variable">message</span>) &<span class="variable">lt</span>; <span class="number integer">0</span>) {
+        <span class="variable">translations</span>[<span class="variable">translation</span>.<span class="variable">field</span>].<span class="variable">push</span>(<span class="variable">translation</span>.<span class="variable">message</span>);
+      } <span class="keyword">else</span> {
+        <span class="variable">translations</span>[<span class="variable">translation</span>.<span class="variable">field</span>] = [<span class="variable">translation</span>.<span class="variable">message</span>];
+      }
+    });
+    <span class="keyword">return</span> <span class="variable">translations</span>;
+  }
+  <span class="keyword">return</span> {
+    <span class="variable">errors</span>: <span class="variable">build</span>(<span class="variable">errors</span>),
+    <span class="variable">info</span>: <span class="variable">build</span>(<span class="variable">info</span>)
+  };
 };
 </code></pre>
 </td>
