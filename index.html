@@ -122,6 +122,8 @@ testing, and you cannot actually process transactions using the sandbox. Keep
 in mind that you should only run unit tests that come with Daimyo using the
 sandbox processor ID.</p>
 
+<h3>Configuration</h3>
+
 <p>Before you use any of the Daimyo's functions, you should configure Daimyo.</p>
 
 <pre><code>var daimyo = require('daimyo');
@@ -132,14 +134,31 @@ daimyo.configure({
   processorId: 'xxxxxxxxxxxxxxxxxxxxxxxx'
 });</code></pre>
 
-<p>If you want to test Daimyo, you can also enable the debug mode. Debug mode logs
-<em>all</em> data that passes through Daimyo, and naturally, you don't want that if
-you want to remain PCI compliant, especially if you use Daimyo's create method
-(see API documentation on create method).</p>
+<p>Samurai gatway uses transparent redirect method to process credit card 
+information. The way it works is, user submits the card and billing data 
+directly to Samurai, and it redirects the user back to your site attaching a 
+payment method token to the request. You have to access to credit card data
+in any part of the work flow. While this is a good method to use in most 
+scnearios, it has one major drawback, and that is you cannot use this method 
+if you site is an AJAX-only web app (so-called single-page app). Daimyo 
+provides a <code>create</code> method, which allows you to create a payment method 
+without using the transparent redirect. You should keep in mind that you have
+to ensure that sensitive data passing through your site is properly secured.
+Use SSL for every connection that passes sensitive data, and do not use GET
+requests for such requests. Also make sure that no sensitive data is logged or 
+stored in any part of your application.</p>
 
-<p>Now you can create a new payment method. Suppse you have received billing and
-creadit card data from your user. You can now create a new Card object use that
-data.</p>
+<p>One of the configuration options is <code>debug</code>, which enables logging of <em>all</em> 
+data that passes through Daimyo. While it is disabled by default, you should
+take utmost care to ensure it remains disabled in production. Double-check
+you app's configuration.</p>
+
+<h3>Card object</h3>
+
+<p>If you chose to use the server-to-server method of creating payment methods,
+you can create a new payment method using the <code>create</code> method. Suppse you have
+received billing and creadit card data from your user. You can now create a new
+Card object use that data.</p>
 
 <pre><code>var card = new daimyo.Card({
   number: data.cardNumber,
@@ -151,8 +170,33 @@ data.</p>
   ....
 });</code></pre>
 
-<p>The card, when initilized, is still not a valid payment method. You have to
-actually create in on Samurai gateway. You can do that like so:</p>
+<p>The card object has following fields:</p>
+
+<ul><li><em>number</em>: card number</li><li><em>csc</em>: card security code (called CCV, CVC, CVV, and various other names)</li><li><em>year</em>: expiration year (if any)</li><li><em>month</em>: expiration month</li><li><em>firstName</em>: card holder's first name</li><li><em>lastName</em>: card holder's last name</li><li><em>address1</em>: billing address line 1</li><li><em>address2</em>: billing address line 2</li><li><em>city</em>: billing address city</li><li><em>state</em>: billing address state/region</li><li><em>zip</em>: billing address zip/postal code</li></ul>
+
+<p>You cannot create a card object unless you supply it a payment token, or credit 
+card number and CSC. If you supply it a token, all other fields are ignored. 
+Otherwise, card number and CSC are required, and you will get an error if you
+do not specify them. If you create a card object with credit card and billing
+details, you will get one more field:</p>
+
+<ul><li><em>issuer</em>: name of the credit card's issuer</li></ul>
+
+<p>The issuer is detected from the card number, and you should not set the field
+manually (or allow the user to set it).</p>
+
+<h3>Basic validation</h3>
+
+<p>Once you've created the card object, you can test its validity:</p>
+
+<pre><code>card.isValid(); // returns true if card is valid
+card.isExpired(); // returns true if expired</code></pre>
+
+<h3>Creating the payment method server-side</h3>
+
+<p>The card, when initilized, is still not a valid <em>payment method</em>. You have to
+actually create in on Samurai gateway in order to make purchases. You can do 
+that like so:</p>
 
 <pre><code>card.create(function(err) {
   // Handle errors
@@ -160,8 +204,39 @@ actually create in on Samurai gateway. You can do that like so:</p>
   console.log(card.token);
 });</code></pre>
 
+<h3>Loading the payment method</h3>
+
 <p>Now that the card object has a token associated with it, you can either save
-the token, or perform transactions with it.</p>
+the token, or perform transactions with it. So, let's say you have stored the 
+payment token, either when doing the transparent redirect, or after you created
+the payment method using the <code>create</code> method. You can now use the <code>load</code> method
+to fetch payment method details from Samurai server.</p>
+
+<pre><code>var myToken = 'xxxxxxxxxxxxxxxxxxxxxxxx';
+var card = new daimyo.Card({token: myToken});
+card.load(function(err) {
+  // Handle error
+});</code></pre>
+
+<p>The card object has all the fields populated. There are also two new fields:</p>
+
+<pre><code>+ messages: contains any Samurai gateway messages about the card
++ method: contains meta-information about the payment method</code></pre>
+
+<p>See the API documentation for details on what these fields contain.</p>
+
+<h3>Updating the payment method</h3>
+
+<p>If you want to update the card details, you can do so using the <code>update</code> 
+method:</p>
+
+<pre><code>card.firstName = 'Foo';
+card.lastName = 'Bar';
+card.address1 = '241 Bar St.';
+card.city = 'Fooville';
+card.update(function(err) {
+  // Handle errors here
+});</code></pre>
 
 <p>REST OF THE DOCS IS ON TODO LIST, SORRY!</p></td><td></td></tr><tr class="filename"><td><h2 id="lib/config.js"><a href="#">config</a></h2></td><td>lib/config.js</td></tr><tr class="code">
 <td class="docs">
