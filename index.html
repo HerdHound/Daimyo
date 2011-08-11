@@ -1164,10 +1164,20 @@ check.cscCheck('4111111111111111', '11');
 </td>
 </tr><tr class="filename"><td><h2 id="lib/xmlutils.js"><a href="#">xmlutils</a></h2></td><td>lib/xmlutils.js</td></tr><tr class="code">
 <td class="docs">
-<p>Daimyo - utilities for dealing with XML
-Copyright (c)2011, by Branko Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a>
-Licensed under MIT license (see LICENSE)
- </p>
+<h1>xmlutils</h1>
+
+<p>Copyright (c)2011, by Branko Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></p>
+
+<p>Utitilities for parsing Samurai XML responses. These utilities are not 
+general-purpose XML parsers and generators. Some of them can be quite useful
+outside the Daimyo context, but there's no guarantee of that.</p>
+
+<p>In general, you shouldn't need to touch these methods yoursef ever, unless
+you are considering developing Daimyo.</p>
+
+<ul><li><strong>author</strong>: <em>Branko</em>
+Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
+(see LICENSE)</li></ul>
 </td>
 <td class="code">
 <pre><code><span class="keyword">var</span> <span class="variable">xmlutils</span> = <span class="variable">exports</span>;</code></pre>
@@ -1175,7 +1185,9 @@ Licensed under MIT license (see LICENSE)
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Convert a string to integer</p>
+<h2>xmlutils.toInt(s)</h2>
+
+<p><em>Convert a string to integer</em></p>
 
 <h2></h2>
 
@@ -1189,7 +1201,9 @@ Licensed under MIT license (see LICENSE)
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Convert a string to Date object</p>
+<h2>xmlutils.toDate(s)</h2>
+
+<p><em>Convert a string to Date object</em></p>
 
 <h2></h2>
 
@@ -1203,7 +1217,9 @@ Licensed under MIT license (see LICENSE)
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Convert a string to Bool</p>
+<h2>xmlutils.toBool(s)</h2>
+
+<p><em>Convert a string to Bool</em></p>
 
 <p>This function treats <code>'true'</code> as <code>true</code>, and everything else as false.</p>
 
@@ -1219,7 +1235,9 @@ Licensed under MIT license (see LICENSE)
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Pass-through function that does nothing</p>
+<h2>xmlutils.toString(s)</h2>
+
+<p><em>Pass-through function that does nothing</em></p>
 
 <h2></h2>
 
@@ -1233,14 +1251,16 @@ Licensed under MIT license (see LICENSE)
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Extract data from XML string using recipe mappings</p>
+<h2>xmlutils.extractData(xml, recipe)</h2>
 
-<p>Recipe object contains a mapping between tag names and coercion functions 
-like <code>toInt</code> and <code>toDate</code>. Each key in the recipe object will be treated
-as a valid tag name, and searched for within the XML. Data found within the 
-XML string will be coerced and assigned to a key in the result object. The
-key name in the result object will match the key name from the recipe 
-object.</p>
+<p><em>Extract data from XML string using recipe mappings</em></p>
+
+<p>Recipe object contains a mapping between tag names and coercion functions
+like <code>xmlutils.toInt</code> and <code>xmlutils.toDate</code>. Each key in the recipe object
+will be treated as a valid tag name, and searched for within the XML. Data
+found within the XML string will be coerced and assigned to a key in the
+result object. The key name in the result object will match the key name
+from the recipe object.</p>
 
 <p>An example recipe object:</p>
 
@@ -1296,11 +1316,13 @@ object.</p>
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Extract messages from XML string</p>
+<h2>xmlutils.extractMessages(xml)</h2>
 
-<p>The messages can be of the following classes:
-- <em>error</em>: errors and declines
-- <em>info</em>: success and other information</p>
+<p><em>Extract messages from XML string</em></p>
+
+<p>The messages can be of the following classes:</p>
+
+<ul><li><em>error</em>: errors and declines</li><li><em>info</em>: success and other information</li></ul>
 
 <p>The messages will also have a context in which it was transmitted, and the 
 message that describes the details.</p>
@@ -1342,9 +1364,9 @@ message that describes the details.</p>
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Decamelizes a string</p>
+<h2>xmlutils.decamelize(s)</h2>
 
-<p>Converts 'CamelCase' to 'camel_case'.</p>
+<p><em>Converts 'CamelCase' to 'camel_case'</em></p>
 
 <h2></h2>
 
@@ -1364,10 +1386,12 @@ message that describes the details.</p>
 </tr>
 <tr class="code">
 <td class="docs">
-<p>Shallow conversion of JavaScript object to XML</p>
+<h2>xmlutils.toXML(o, [topLevel], [keys])</h2>
 
-<p>It converts each key to a single XML node and converts the contents of the 
-key to a text node by calling <code>toString</code> on it.</p>
+<p><em>Shallow conversion of JavaScript object to XML</em></p>
+
+<p>This method converts each key to a single XML node and converts the contents
+of the key to a text node by calling <code>toString</code> on it.</p>
 
 <p>Optionally, the whole XML string can be wrapped in a top-level tag.</p>
 
