@@ -925,6 +925,113 @@ using the redacted payment method for transactions.</p>
 <span class="variable">daimyo</span>.<span class="class">Card</span> = <span class="class">Card</span>;
 </code></pre>
 </td>
+</tr><tr class="filename"><td><h2 id="lib/transaction.js"><a href="#">transaction</a></h2></td><td>lib/transaction.js</td></tr><tr class="code">
+<td class="docs">
+<h1>transaction</h1>
+
+<p>Copyright (c)2011, by Branko Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></p>
+
+<ul><li><strong>author</strong>: <em>Branko</em>
+Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
+(see LICENSE)</li></ul>
+</td>
+<td class="code">
+<pre><code><span class="keyword">var</span> <span class="variable">config</span> = <span class="variable">require</span>(<span class="string">'./config'</span>);
+<span class="keyword">var</span> <span class="class">DaimyoError</span> = <span class="variable">require</span>(<span class="string">'./error'</span>);
+<span class="keyword">var</span> <span class="variable">xmlutils</span> = <span class="variable">require</span>(<span class="string">'./xmlutils'</span>);
+<span class="keyword">var</span> <span class="variable">settings</span> = <span class="variable">config</span>.<span class="variable">settings</span>;
+<span class="keyword">var</span> <span class="variable">debug</span> = <span class="variable">config</span>.<span class="variable">debug</span>;
+<span class="keyword">var</span> <span class="variable">transaction</span> = <span class="variable">exports</span>;
+
+<span class="keyword">var</span> <span class="class">VALID_TRANSACTIONS</span> = [<span class="string">'purchase'</span>, <span class="string">'authorize'</span>, <span class="string">'capture'</span>, <span class="string">'void'</span>, <span class="string">'credit'</span>];</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>getTransactionPath(type, [transactionId])</h2>
+
+<p><em>Builds transaction path</em></p>
+
+<h2></h2>
+
+<ul><li><p><strong>param</strong>: <em>String</em>  subpath Subpath of the transaction</p></li><li><p><strong>param</strong>: <em>String</em>  [transactionId] Transaction ID for capture, void and fetch</p></li></ul>
+</td>
+<td class="code">
+<pre><code><span class="keyword">function</span> <span class="variable">getTransactionPath</span>(<span class="variable">type</span>, <span class="variable">transactionId</span>) {
+  <span class="keyword">var</span> <span class="variable">subpath</span> = <span class="string">'/gateways/'</span>;
+  <span class="keyword">if</span> (<span class="variable">transactionId</span>) {
+    <span class="variable">subpath</span> = <span class="string">'/transactions/'</span>;
+  }
+  <span class="keyword">return</span> <span class="string">'/transactions/'</span> + (<span class="variable">transactionId</span> || <span class="variable">settings</span>.<span class="variable">processorId</span>) + <span class="string">'/'</span> +
+    <span class="variable">type</span> + <span class="string">'.xml'</span>;
+}</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>transaction.Transaction(opts)</h2>
+
+<p><em>Low-level transaction object</em></p>
+
+<p>Options for the transaction object are:</p>
+
+<ul><li><em>type</em>: Transaction type</li><li><em>data</em>: Transaction data</li><li><em>error</em>: Error handler</li><li><em>success</em>: Success handler</li></ul>
+
+<p>Error/success handlers can be attached using the <code>on()</code> method as well, or
+specified as separate arguments. The <code>errback</code>, and <code>callback</code>, arguments
+take precendence over the <code>error</code>, and <code>success</code>, options.</p>
+
+<h2></h2>
+
+<ul><li><p><strong>param</strong>: <em>Object</em>  opts Transaction options</p></li><li><p><strong>param</strong>: <em>Function</em>  [errback] Error handler</p></li><li><p><strong>param</strong>: <em>Function</em>  [callback] Callback (called on success)</p></li><li><p><strong>constructo</strong>: <em>r</em></p></li></ul>
+</td>
+<td class="code">
+<pre><code><span class="variable">transaction</span>.<span class="class">Transaction</span> = <span class="keyword">function</span>(<span class="variable">opts</span>, <span class="variable">errback</span>, <span class="variable">callback</span>) {
+  <span class="comment">// opts are required</span>
+  <span class="keyword">if</span> (!<span class="variable">opts</span>) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Missing options object'</span>, <span class="keyword">null</span>);
+  }
+  <span class="comment">// opts.type are required</span>
+  <span class="keyword">if</span> (!<span class="variable">opts</span>.<span class="variable">type</span> || <span class="class">VALID_TRANSACTIONS</span>.<span class="variable">indexOf</span>(<span class="variable">opts</span>.<span class="variable">type</span>) &<span class="variable">lt</span>; <span class="number integer">0</span>) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Missing or invalid transaction type'</span>, <span class="keyword">null</span>);
+  }
+  <span class="comment">// opts.data are required</span>
+  <span class="keyword">if</span> (!<span class="variable">opts</span>.<span class="variable">data</span>) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Missing payload data'</span>);
+  }
+
+  <span class="variable">callback</span> = <span class="variable">callback</span> || <span class="variable">opts</span>.<span class="variable">success</span>;
+
+  <span class="comment">// swap callback and errback if callback is not defined</span>
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="variable">callback</span> !== <span class="string">'function'</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="keyword">typeof</span> <span class="variable">errback</span> === <span class="string">'function'</span>) {
+    <span class="variable">callback</span> = <span class="variable">errback</span>;
+    <span class="variable">errback</span> = <span class="keyword">null</span>;
+  }
+
+  <span class="comment">// callback is required</span>
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="variable">callback</span> !== <span class="string">'function'</span>) {
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Missing success callback'</span>, <span class="keyword">null</span>);
+  }
+
+  <span class="variable">errback</span> = <span class="variable">errback</span> || <span class="variable">opts</span>.<span class="variable">error</span>;
+
+  <span class="keyword">if</span> (<span class="variable">callback</span>) {
+    <span class="this">this</span>.<span class="variable">onSuccess</span> = <span class="variable">callback</span>;
+  }
+
+  <span class="keyword">if</span> (<span class="variable">errback</span>) {
+    <span class="this">this</span>.<span class="variable">onError</span> = <span class="variable">errback</span>;
+  }
+
+  <span class="this">this</span>.<span class="variable">data</span> = <span class="variable">opts</span>.<span class="variable">data</span>;
+  <span class="this">this</span>.<span class="variable">path</span> = <span class="variable">getTransactionPath</span>(<span class="variable">opts</span>.<span class="variable">type</span>, <span class="variable">opts</span>.<span class="variable">transactionId</span>);
+};
+
+<span class="variable">transaction</span>.<span class="class">Transaction</span>.<span class="variable">prototype</span>.<span class="variable">toXML</span> = <span class="keyword">function</span>() {
+  <span class="keyword">return</span> <span class="variable">xmlutils</span>.<span class="variable">toXML</span>(<span class="this">this</span>.<span class="variable">data</span>, <span class="string">'transaction'</span>);
+};
+</code></pre>
+</td>
 </tr><tr class="filename"><td><h2 id="lib/check.js"><a href="#">check</a></h2></td><td>lib/check.js</td></tr><tr class="code">
 <td class="docs">
 <h1>check</h1>
@@ -1717,16 +1824,19 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 </td>
 <td class="code">
 <pre><code><span class="keyword">function</span> <span class="class">DaimyoError</span>(<span class="variable">category</span>, <span class="variable">message</span>, <span class="variable">details</span>) {
+  <span class="class">Error</span>.<span class="variable">call</span>(<span class="this">this</span>);
+  <span class="class">Error</span>.<span class="variable">captureStackTrace</span>(<span class="this">this</span>, <span class="this">this</span>.<span class="variable">constructor</span>);
   <span class="this">this</span>.<span class="variable">category</span> = <span class="variable">category</span>;
   <span class="this">this</span>.<span class="variable">message</span> = <span class="variable">message</span>;
   <span class="this">this</span>.<span class="variable">details</span> = <span class="variable">details</span>;
+  <span class="this">this</span>.<span class="variable">name</span> = <span class="this">this</span>.<span class="variable">constructor</span>.<span class="variable">name</span>;
 }
 
 <span class="variable">util</span>.<span class="variable">inherits</span>(<span class="class">DaimyoError</span>, <span class="class">Error</span>);
 
 <span class="class">DaimyoError</span>.<span class="variable">prototype</span>.<span class="variable">toString</span> = <span class="keyword">function</span>() {
-  <span class="keyword">return</span> <span class="string">'DAIMYO_ERR in '</span> + <span class="this">this</span>.<span class="variable">category</span> + <span class="string">': '</span> + <span class="this">this</span>.<span class="variable">message</span> + <span class="string">'\n'</span> + 
-    <span class="variable">util</span>.<span class="variable">inspect</span>(<span class="variable">details</span>);
+  <span class="keyword">return</span> <span class="this">this</span>.<span class="variable">category</span> + <span class="string">': '</span> + <span class="this">this</span>.<span class="variable">message</span> + <span class="string">': '</span> +
+    <span class="variable">util</span>.<span class="variable">inspect</span>(<span class="this">this</span>.<span class="variable">details</span>);
 };
 
 <span class="variable">module</span>.<span class="variable">exports</span> = <span class="class">DaimyoError</span>;
