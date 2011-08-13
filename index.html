@@ -122,6 +122,63 @@ testing, and you cannot actually process transactions using the sandbox. Keep
 in mind that you should only run unit tests that come with Daimyo using the
 sandbox processor ID.</p>
 
+<h3>Overview</h3>
+
+<p>When using the Samurai payment gateway, you basically deal with two separate
+concepts: payment methods (cards) and transactions (making/loosing money).
+Daimyo's API reflects this dualism. It provides two main constructors that you
+will use most of the time: <code>Card</code> and <code>Transaction</code> (and variants of
+<code>Transaction</code>).</p>
+
+<p>Once created the card objects have the following methods:</p>
+
+<ul><li><code>card.create()</code>: cretes a new payment methods</li><li><code>card.load()</code>: fetches payment method data from the Samurai vault</li><li><code>card.update()</code>: updates the payment method details</li><li><code>card.retain()</code>: instructs Samurai to permanently save the payment method</li><li><code>card.redact()</code>: instructs Samurai to remove the payment method from vault</li></ul>
+
+<p>(See notes about PCI compliance before you start using some of these methods.)</p>
+
+<p>The transaction object is constructed using several constructors (they are not
+yet available, though) that are specialized for different types of
+transactions, or the generic <code>Transaction</code> constructor. In each case, the
+constructor only has one method:</p>
+
+<ul><li><code>transaction.process()</code></li></ul>
+
+<p>This method takes a card object as its argument, and runs a transaction against
+the payment method associated with the card.</p>
+
+<h3>Notes on PCI compliance</h3>
+
+<p>There are two ways you can use the Samurai gateway with Daimyo in terms of
+payment method. One is server-to-server, where you handle the cardholder data,
+and pass them on to the gateway. Another method is transparent redirect, where
+you set up a web form that submits directly to the gateway, and you only
+receive a <em>payment method token</em> that is associated with whatever data the 
+user submitted. </p>
+
+<p>While the server-to-server method is useful in cases a web form required for
+transparent redirect method cannot be set up (for example, for single-page AJAX
+apps, where cross-site request restrictions apply), you have to be aware that
+full PCI compliance for class C merchants is still required. Class C PCI
+compliance may involve on-site audits, or audits of any 3rd party
+infrastructure you might be using, and many other steps. You can read more
+about PCI compliance at
+<a href="https://www.pcisecuritystandards.org/">www.pcisecuritystandards.org</a>.</p>
+
+<p>Also note that Daimyo itself has <em>not</em> been atested or tested for PCI
+compliance. While Daimyo's author sincerely believes that Daimyo is reasonably
+safe (or, rather, will be when a full release is made), we do not, and cannot
+make any guarantees to that effect, either explicit or implied, as noted in the
+<a href="https://github.com/HerdHound/Daimyo/blob/master/LICENSE">LICENSE</a>.</p>
+
+<h3>Ashigaru and single-page AJAX apps</h3>
+
+<p>If you have an AJAX-intesive website that cannot make regular POST requests
+using web forms, you might want to try using the Ashigaru jQuery plugin. The
+plugin is included in the Daimyo project directory under <code>/support</code>
+subdirectory. For more information on how to set up your server for use with
+Ashigaru, and basic usage of this plugin, take a look at Ashigaru's
+documentation.</p>
+
 <h3>Configuration</h3>
 
 <p>Before you use any of the Daimyo's functions, you should configure Daimyo.</p>
@@ -134,19 +191,18 @@ daimyo.configure({
   processorId: 'xxxxxxxxxxxxxxxxxxxxxxxx'
 });</code></pre>
 
-<p>Samurai gatway uses transparent redirect method to process credit card 
-information. The way it works is, user submits the card and billing data 
-directly to Samurai, and it redirects the user back to your site attaching a 
-payment method token to the request. You have to access to credit card data
-in any part of the work flow. While this is a good method to use in most 
-scnearios, it has one major drawback, and that is you cannot use this method 
-if you site is an AJAX-only web app (so-called single-page app). Daimyo 
-provides a <code>create</code> method, which allows you to create a payment method 
-without using the transparent redirect. You should keep in mind that you have
-to ensure that sensitive data passing through your site is properly secured.
-Use SSL for every connection that passes sensitive data, and do not use GET
-requests for such requests. Also make sure that no sensitive data is logged or 
-stored in any part of your application.</p>
+<p>Samurai gatway uses transparent redirect method to process credit card
+information. The way it works is, user submits the card and billing data
+directly to Samurai, and it redirects the user back to your site attaching a
+payment method token to the request. You have to access to credit card data in
+any part of the work flow. Daimyo provides a <code>create</code> method, which allows you
+to create a payment method without using the transparent redirect. You may use
+this method if you really cannot use the transparent redirect, and you find
+Ashigaru to be broken or otherwise unusable for you. You should keep in mind,
+though, that you have to ensure that sensitive data passing through your site
+is properly secured.  Use SSL for every connection that passes sensitive data,
+and do not use GET requests for such requests. Also make sure that no sensitive
+data is logged or stored in any part of your application.</p>
 
 <p>One of the configuration options is <code>debug</code>, which enables logging of <em>all</em> 
 data that passes through Daimyo. While it is disabled by default, you should
@@ -311,7 +367,8 @@ to access and set the settings is through either <code>configure()</code> or
 <p>Settings are expected to contain following keys with their default values:</p>
 
 <ul><li><em>merchantKey</em>: Samurai gateway Merchant Key (default: <code>''</code>)</li><li><em>apiPassword</em>: Samurai gateway API Password (default: <code>''</code>)</li><li><em>processorId</em>: Processor (gateway) ID; be sure to set this to a sandbox
-ID for testing(default: <code>''</code>)</li><li><em>enabled</em>: Whether to actually make requests to gateway (default: true)</li><li><em>debug</em>: Whether to log to STDOUT; it is highly recommended that 
+ID for testing(default: <code>''</code>)</li><li><em>currency</em>: Default currency for all transactions (can be overriden by
+specifying the appropriate options in transaction objects)</li><li><em>enabled</em>: Whether to actually make requests to gateway (default: true)</li><li><em>debug</em>: Whether to log to STDOUT; it is highly recommended that 
 you disable this in production, to remain PCI comliant, and to 
 avoid performance issues (default: true)</li></ul>
 
@@ -324,6 +381,7 @@ treated as a constant (i.e., read-only).
 <span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">merchantKey</span> = <span class="string">''</span>;
 <span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">apiPassword</span> = <span class="string">''</span>;
 <span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">processorId</span> = <span class="string">''</span>;
+<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">currency</span> = <span class="string">'USD'</span>;
 <span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">enabled</span> = <span class="variable">true</span>; <span class="comment">// Does not make any actual API calls if false</span>
 <span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">debug</span> = <span class="variable">false</span>; <span class="comment">// Enables *blocking* debug output to STDOUT</span>
 <span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">apiVersion</span> = <span class="number integer">1</span>; <span class="comment">// Don't change this... unless you need to</span></code></pre>
@@ -975,11 +1033,39 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 
 <p>Options for the transaction object are:</p>
 
-<ul><li><em>type</em>: Transaction type</li><li><em>data</em>: Transaction data</li><li><em>error</em>: Error handler</li><li><em>success</em>: Success handler</li></ul>
+<ul><li><em>type</em>: Transaction type</li><li><em>data</em>: Transaction data</li><li><em>error</em>: Error handler</li><li><em>success</em>: Success handler</li><li><em>[transactionId]</em>: (optional) Transaction ID</li></ul>
 
-<p>Error/success handlers can be attached using the <code>on()</code> method as well, or
-specified as separate arguments. The <code>errback</code>, and <code>callback</code>, arguments
-take precendence over the <code>error</code>, and <code>success</code>, options.</p>
+<p>Error and success handlers can be specified by two optional arguments 
+<code>errback</code> and <code>callback</code>. These arguments will override <code>error</code> and 
+<code>success</code> options, so you need not specify both, and there is no difference
+between them.</p>
+
+<p>After the object is created, you can access and set these callbacks using 
+the <code>onError</code> and <code>onSuccess</code> methods. There is no validation involved
+when doing so, however, so you should be mindful not to set these values
+to non-functions.</p>
+
+<p>The error callback will receive a single <code>err</code> object, which contains the
+usual <code>DaimyoError</code> instance. The success callback will either receive a
+<code>null</code> or messages if the gateway returns any.</p>
+
+<p>Note that the <code>Transaction</code> constructor is not meant to be used directly. 
+However, if you find that other higher-level specialized constructors do 
+not perform the kind of transaction you are looking for, you can use the
+generic <code>Transaction</code> constructor to make the transactions.</p>
+
+<p>To use the generic constructor, supply the type of the transaction (it 
+should be named after the request URI component that identifies the 
+transaction type (e.g, if the URI ends in <code>/credit.xml</code>, the transaction
+type is <code>credit</code>), and the <code>transactionId</code> option as necessary. The data 
+option should be an object that contains key-value mappings such that 
+each key corresponds to an XML node of the request payload. </p>
+
+<p>When naming the keys, feel free to use camel-case names, as those will get
+decamelized prior to XML conversion. For example if the node is called
+<code>payment_method_token</code>, you may call it either that, or 
+<code>paymentMethodToken</code>. Either way will work just fine (if it doesn't, file 
+a bug, please).</p>
 
 <h2></h2>
 
@@ -1024,12 +1110,207 @@ take precendence over the <code>error</code>, and <code>success</code>, options.
   }
 
   <span class="this">this</span>.<span class="variable">data</span> = <span class="variable">opts</span>.<span class="variable">data</span>;
+  
+  <span class="comment">// Some defaults for complex transactions</span>
+  <span class="keyword">if</span> (!<span class="variable">opts</span>.<span class="variable">transactionId</span>) {
+    <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">type</span> = <span class="variable">opts</span>.<span class="variable">type</span>;
+    <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">currency</span> = <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">currency</span> || <span class="variable">settings</span>.<span class="variable">currency</span>;
+  }
   <span class="this">this</span>.<span class="variable">path</span> = <span class="variable">getTransactionPath</span>(<span class="variable">opts</span>.<span class="variable">type</span>, <span class="variable">opts</span>.<span class="variable">transactionId</span>);
 };
 
 <span class="variable">transaction</span>.<span class="class">Transaction</span>.<span class="variable">prototype</span>.<span class="variable">toXML</span> = <span class="keyword">function</span>() {
-  <span class="keyword">return</span> <span class="variable">xmlutils</span>.<span class="variable">toXML</span>(<span class="this">this</span>.<span class="variable">data</span>, <span class="string">'transaction'</span>);
+  <span class="keyword">if</span> (<span class="this">this</span>.<span class="variable">data</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="class">Object</span>.<span class="variable">keys</span>(<span class="this">this</span>.<span class="variable">data</span>).<span class="variable">length</span>) {
+    <span class="keyword">return</span> <span class="variable">xmlutils</span>.<span class="variable">toXML</span>(<span class="this">this</span>.<span class="variable">data</span>, <span class="string">'transaction'</span>);
+  }
 };
+</code></pre>
+</td>
+</tr><tr class="filename"><td><h2 id="support/ashigaru.js"><a href="#">ashigaru</a></h2></td><td>support/ashigaru.js</td></tr><tr class="code">
+<td class="docs">
+<h1>Ashigaru</h1>
+
+<p>Copyright (c)2011, by Branko Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></p>
+
+<p>jQuery plugin for making requests to Samurai payment gateway via a hidden 
+iframe.</p>
+
+<p>Ashigaru is part of Daimyo (https//github.com/HerdHound/Daimyo).</p>
+
+<h2>About the JSON parser</h2>
+
+<p>Ashigaru requires either a native JSON parser, or a 3rd party solution.</p>
+
+<p>If your environment (browser(s) you intend to support) does not provide the
+native JSON object, you can use the Crockford's implementation found on
+<a href="https://github.com/douglascrockford/JSON-js/blob/master/json2.js">on Github</a>.</p>
+
+<h2>Preparing the server</h2>
+
+<p>Before you can use this plugin, you must make sure that a valid redirect URL
+is handled on your server. Once Samurai gateway receives data from this 
+plugin, it will redirect the user to the redirect URL. The redirect URL will
+have an URL parameter called <code>payment_method_token</code> which should be a 
+24-digit hexdigest. That token identifies the payment method created by the
+user. (See the documentation for the <code>daimyo</code> module for more information
+on how to use this token.)</p>
+
+<p>Once you have performed any operations you want, you can respond to the 
+request that was made to the redirect URL. The response should be text/html,
+and it should contain at least the <code>&lt;body&gt;</code> tag, and a single <code>&lt;script&gt;</code> tag
+that contains the JSON response. A typical success response may look like 
+this:</p>
+
+<pre><code>&lt;body&gt;&lt;script&gt;{"status": "ok"}&lt;/script&gt;&lt;/body&gt;</code></pre>
+
+<p>There is no need to add standard HTML markup because this response will
+never be rendered. Once you have set up the server-side handler to work this
+way, you are ready to start using Ashigaru.</p>
+
+<h2>Basic usage</h2>
+
+<p>Generally, it is expected that you will take care of the user-facing form
+yourself, validate the input, and extract the data into an object. The 
+object should have the following properties:</p>
+
+<ul><li><em>firstName</em>: cardholder's first name (optional)</li><li><em>lastName</em>: cardholder's last name (optional)</li><li><em>address1</em>: cardholder's address line 1 (optional)</li><li><em>address2</em>: cardholder's address line 2 (optional)</li><li><em>city</em>: city (optional)</li><li><em>state</em>: state or region (optional)</li><li><em>country</em>: country (optional)</li><li><em>zip</em>: zip/postal code (optional)</li><li><em>number</em>: card number (required)</li><li><em>csc</em>: card security code, CCV, CVV, CVC, etc (required)</li><li><em>year</em>: expiration year (optional)</li><li><em>month</em>: expiration month (optional)</li></ul>
+
+<p>As you can see, only card number and CSC (a.k.a CCV, CVC, CVV) are required,
+and other fields are optional. To increase the chance of transactions 
+actually clearing, and minimize your liability in case of trouble, you 
+should try to collect as much data as possible, but cardholder name, zip, 
+and address line 1 are probably bare minimum.</p>
+
+<p>Once you have created the object containing the cardholder data, you can 
+call Ashigaru like this:</p>
+
+<pre><code>$.ashigaru(cardData, merchantKey, redirectURL, function(err, data) {
+  // err means there was an error parsing the JSON or no data
+  // was ever returned. If all went fine, err should be null.
+  // data will contain a fully parsed JSON response.
+});</code></pre>
+
+<p>Ashigaru currently has no mechanisms for retrying a failed connection. You 
+should make sure you handle such unforeseen problems yourself.</p>
+
+<ul><li><strong>version</strong>: <em>0</em>
+.0.1</li><li><strong>author</strong>: <em>Branko</em>
+Vurkelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
+(see LICENSE)</li></ul>
+</td>
+<td class="code">
+<pre><code>(<span class="keyword">function</span>($, <span class="variable">window</span>) {
+
+  <span class="keyword">var</span> <span class="variable">originalDomain</span> = <span class="variable">window</span>.<span class="variable">document</span>.<span class="variable">domain</span>;
+  <span class="keyword">var</span> <span class="variable">samuraiURI</span> = <span class="string">'https://samurai.feefighters.com/v1/payment_methods'</span>;</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>Remove the hidden form</h2>
+</td>
+<td class="code">
+<pre><code><span class="keyword">function</span> <span class="variable">removeForm</span>() {
+    $(<span class="string">'#samurai-form'</span>).<span class="variable">remove</span>();
+    <span class="variable">removeIframe</span>();
+  }</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>jQuery.ashigaru(data, merchantKey, redirectURI, callback)</h2>
+
+<p><em>Create and submit hidden form to make request with</em></p>
+
+<p>The data argument is used to populate form with data. It can have any of 
+the following fields:</p>
+
+<ul><li><em>firstName</em></li><li><em>lastName</em></li><li><em>address1</em></li><li><em>address2</em></li><li><em>city</em></li><li><em>state</em></li><li><em>zip</em></li><li><em>number</em></li><li><em>csc</em></li><li><em>year</em></li><li><em>month</em></li></ul>
+
+<p>The callback is called from the load event handler on the iframe. See the
+details of the <code>onResultLoad</code> function in this module.</p>
+
+<h2></h2>
+
+<ul><li><p><strong>param</strong>: <em>Object</em>  data Object containing the data for the form</p></li><li><p><strong>param</strong>: <em>String</em>  merchantKey Samurai gateway merchant key</p></li><li><p><strong>param</strong>: <em>String</em>  redirectURI URI of the transparent redirect handler</p></li><li><p><strong>param</strong>: <em>Function</em>  callback Called with error and results</p></li></ul>
+</td>
+<td class="code">
+<pre><code>$.<span class="variable">ashigaru</span> = <span class="keyword">function</span>(<span class="variable">data</span>, <span class="variable">merchantKey</span>, <span class="variable">redirectURI</span>, <span class="variable">callback</span>) {
+    <span class="keyword">var</span> <span class="variable">form</span>;
+
+    <span class="keyword">if</span> (!<span class="variable">data</span> || !<span class="variable">merchantKey</span> || !<span class="variable">redirectURI</span> || !<span class="variable">callback</span>) {
+      <span class="keyword">throw</span> (<span class="string">'All arguments are required'</span>);
+    }
+
+    <span class="keyword">var</span> <span class="variable">fullData</span> = {
+      <span class="variable">firstName</span>: <span class="string">''</span>,
+      <span class="variable">lastName</span>: <span class="string">''</span>,
+      <span class="variable">address1</span>: <span class="string">''</span>,
+      <span class="variable">address2</span>: <span class="string">''</span>,
+      <span class="variable">city</span>: <span class="string">''</span>,
+      <span class="variable">state</span>: <span class="string">''</span>,
+      <span class="variable">zip</span>: <span class="string">''</span>,
+      <span class="variable">number</span>: <span class="string">''</span>,
+      <span class="variable">csc</span>: <span class="string">''</span>,
+      <span class="variable">year</span>: <span class="string">''</span>,
+      <span class="variable">month</span>: <span class="string">''</span>
+    };
+
+    $.<span class="variable">extend</span>(<span class="variable">fullData</span>, <span class="variable">data</span>);
+
+    <span class="keyword">var</span> <span class="variable">formHTML</span> = <span class="string">'&lt;form id=&quot;samurai-form&quot; style=&quot;display:hidden&quot; '</span> +
+      <span class="string">'action=&quot;$requestURI&quot; method=&quot;POST&quot; target=&quot;samurai-iframe&quot;&gt;'</span> + 
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;merchant_key&quot; value=&quot;$merchantkey&quot;&gt;'</span>+
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;redirect_url&quot; value=&quot;$redirecturl&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[first_name]&quot; value=&quot;$firstName&quot;&gt;'</span>+
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[last_name]&quot; value=&quot;$lastName&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[address_1]&quot; value=&quot;$address1&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[address_2]&quot; value=&quot;$address2&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[city]&quot; value=&quot;$city&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[state]&quot; value=&quot;$state&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[zip]&quot; value=&quot;$zip&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[card_number]&quot; value=&quot;$number&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[card_type]&quot; value=&quot;$issuer&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[cvv]&quot; value=&quot;$csc&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[expiry_year]&quot; value=&quot;$year&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[expiry_month]&quot; value=&quot;$month&quot;&gt;'</span> +
+      <span class="string">'&lt;/form&gt;'</span>;
+
+    <span class="comment">// Replace non-data field placeholders and form attribute placeholders</span>
+    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$requestURI'</span>, <span class="variable">samuraiURI</span>);
+    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$merchantkey'</span>, <span class="variable">merchantKey</span>);
+    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$redirecturl'</span>, <span class="variable">redirectURI</span>);
+
+    <span class="comment">// Replace placeholders in form HTML with real data</span>
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">key</span> <span class="keyword">in</span> <span class="variable">fullData</span>) {
+      <span class="keyword">if</span> (<span class="variable">fullData</span>.<span class="variable">hasOwnProperty</span>(<span class="variable">key</span>)) {
+        <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$'</span> + <span class="variable">key</span>, <span class="variable">fullData</span>[<span class="variable">key</span>]);
+      }
+    }
+
+    <span class="comment">// Inject this into DOM</span>
+    <span class="variable">form</span> = $(<span class="variable">formHTML</span>);
+
+    <span class="comment">// Sanity check</span>
+    <span class="keyword">if</span> (<span class="variable">form</span>.<span class="variable">attr</span>(<span class="string">'action'</span>) === <span class="string">'$requestURI'</span>) { 
+      <span class="keyword">throw</span> <span class="string">'Form error'</span>; 
+    }
+
+    <span class="comment">// Attach the form to body</span>
+    <span class="variable">form</span>.<span class="variable">appendTo</span>(<span class="string">'body'</span>);
+
+    <span class="comment">// Submit the form</span>
+    <span class="variable">form</span>.<span class="variable">unbind</span>(<span class="string">'submit'</span>);
+    <span class="variable">form</span>.<span class="variable">submit</span>(<span class="keyword">function</span>(<span class="variable">e</span>) {
+      <span class="variable">e</span>.<span class="variable">stopPropagation</span>();
+      <span class="keyword">return</span> <span class="variable">createIframe</span>(<span class="variable">callback</span>);
+    });
+
+    <span class="variable">form</span>.<span class="variable">submit</span>();
+  };
+ 
+}(<span class="variable">jQuery</span>, <span class="this">this</span>));
+
 </code></pre>
 </td>
 </tr><tr class="filename"><td><h2 id="lib/check.js"><a href="#">check</a></h2></td><td>lib/check.js</td></tr><tr class="code">
@@ -1645,7 +1926,8 @@ is set to <code>text/xml</code>.</p>
     <span class="string">'Authorization'</span>: <span class="variable">generateCreds</span>(),
     <span class="string">'User-Agent'</span>: <span class="string">'Daimyo/'</span> + <span class="class">DAIMYO_VERSION</span> + <span class="string">' Node.js/'</span> + <span class="variable">process</span>.<span class="variable">version</span>,
     <span class="string">'Accepts'</span>: <span class="string">'text/plain; q=0.5, text/xml; q=0.8, text/html'</span>,
-    <span class="string">'Date'</span>: <span class="keyword">new</span> <span class="class">Date</span>().<span class="variable">toString</span>()
+    <span class="string">'Date'</span>: <span class="keyword">new</span> <span class="class">Date</span>().<span class="variable">toString</span>(),
+    <span class="string">'Content-Length'</span>: <span class="number integer">0</span>
   };
 
   <span class="keyword">if</span> (<span class="variable">payload</span>) {
