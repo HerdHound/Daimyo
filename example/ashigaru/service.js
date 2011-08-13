@@ -17,6 +17,7 @@ $(document).ready(function() {
   };
 
   $.ashigaru(cardData, merchantKey, redirectUrl, function(err, res) {
+    $('#loading').remove();
     $('<p><strong>Errors:</strong> ' + err + '</p>').appendTo('body');
     $('<p><strong>Response: </strong>' + 
       (res && res.status || 'empty') + 
