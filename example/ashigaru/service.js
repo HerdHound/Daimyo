@@ -17,6 +17,10 @@ $(document).ready(function() {
   };
 
   $.ashigaru(cardData, merchantKey, redirectUrl, function(err, res) {
+    $('<p><strong>Errors:</strong> ' + err + '</p>').appendTo('body');
+    $('<p><strong>Response: </strong>' + 
+      (res && res.status || 'empty') + 
+      '</p>').appendTo('body');
     console.log(err, res);
   });
 
