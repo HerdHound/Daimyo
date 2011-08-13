@@ -22,7 +22,9 @@ $(document).ready(function() {
     $('<p><strong>Response: </strong>' + 
       (res && res.status || 'empty') + 
       '</p>').appendTo('body');
-    console.log(err, res);
+    if (window.console && console.log) {
+      console.log(err, res);
+    }
   });
 
 });
