@@ -1,6 +1,6 @@
 $(document).ready(function() {
   var merchantKey = '2a56f7a86e5571c7b60040ee';
-  var redirectUrl = 'https://herdhound.github.com/Daimyo/examples/ashigaru/success.html';
+  var redirectUrl = 'https://herdhound.github.com/Daimyo/example/ashigaru/success.html';
 
   var cardData = {
     firstName: 'Foo',
