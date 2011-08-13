@@ -1,1 +1,17 @@
-<body><script>({"status":"ok"})</script></body>
+<body>
+  <script>({"status":"ok"})</script>
+  <p>
+  The result HTML has to contain a single <code>&lt;script&gt;</code> tag that
+  has a JSON string wrapped in round brackets inside it.
+  </p>
+  <p>
+  This example response uses the following code:
+  </p>
+  <pre><code>&lt;script&gt;({"status": "ok"})&lt;/script&gt;</code></pre>
+  <p>
+  A <a href="http://jade-lang.com/">Jade</a> template for the above may look
+  like this:
+  </p>
+  <pre><code>body
+  script= myJsonString</code></pre>
+</body>
