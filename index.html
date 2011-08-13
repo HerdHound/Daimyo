@@ -177,7 +177,8 @@ using web forms, you might want to try using the Ashigaru jQuery plugin. The
 plugin is included in the Daimyo project directory under <code>/support</code>
 subdirectory. For more information on how to set up your server for use with
 Ashigaru, and basic usage of this plugin, take a look at Ashigaru's
-documentation.</p>
+documentation. You can also find a 
+<a href="http://herdhound.github.com/Daimyo/example/ashigaru/">functional demo</a> online.</p>
 
 <h3>Configuration</h3>
 
@@ -1161,7 +1162,10 @@ and it should contain at least the <code>&lt;body&gt;</code> tag, and a single <
 that contains the JSON response. A typical success response may look like 
 this:</p>
 
-<pre><code>&lt;body&gt;&lt;script&gt;{"status": "ok"}&lt;/script&gt;&lt;/body&gt;</code></pre>
+<pre><code>&lt;body&gt;&lt;script&gt;({"status": "ok"})&lt;/script&gt;&lt;/body&gt;</code></pre>
+
+<p>Note that the JSON is wrapped in brackets to make it a valid object 
+expression. Otherwise, the browsers will complain.</p>
 
 <p>There is no need to add standard HTML markup because this response will
 never be rendered. Once you have set up the server-side handler to work this
@@ -1258,7 +1262,7 @@ details of the <code>onResultLoad</code> function in this module.</p>
 
     $.<span class="variable">extend</span>(<span class="variable">fullData</span>, <span class="variable">data</span>);
 
-    <span class="keyword">var</span> <span class="variable">formHTML</span> = <span class="string">'&lt;form id=&quot;samurai-form&quot; style=&quot;display:hidden&quot; '</span> +
+    <span class="keyword">var</span> <span class="variable">formHTML</span> = <span class="string">'&lt;form id=&quot;samurai-form&quot; style=&quot;display:none&quot; '</span> +
       <span class="string">'action=&quot;$requestURI&quot; method=&quot;POST&quot; target=&quot;samurai-iframe&quot;&gt;'</span> + 
       <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;merchant_key&quot; value=&quot;$merchantkey&quot;&gt;'</span>+
       <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;redirect_url&quot; value=&quot;$redirecturl&quot;&gt;'</span> +
