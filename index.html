@@ -210,6 +210,30 @@ data that passes through Daimyo. While it is disabled by default, you should
 take utmost care to ensure it remains disabled in production. Double-check
 you app's configuration.</p>
 
+<h3>Configuration locking</h3>
+
+<p>Note that Daimyo's performs configuration-locking after you call
+<code>daimyo.configure()</code> for the first time (and if that's successful). This
+means that you will not be able to call <code>daimyo.configure()</code> multiple times
+to set different options. You need to set all options beforehand. </p>
+
+<p>This is a security feature that prevents accidental/malicious resetting of
+critical options. </p>
+
+<p>Calling <code>daimyo.option()</code> will also fail after configuration has been locked,
+but you can use multiple calls to <code>daimyo.options()</code> to set an option
+multiple times and it won't lead to locking.</p>
+
+<p>Althoug using <code>daimyo.option()</code> may sound more convenient, you should set all
+critical core options (including <code>debug</code>, <code>enabled</code>, and <code>sandbox</code>) using the
+<code>daimyo.configure()</code> method for security reasons.</p>
+
+<p>Currently, the only exception to configuration locking is the <code>currency</code>
+parameter, which can be set any number of times. Future version of Daimyo may
+include more such non-critical options.</p>
+
+<p>See the <code>config</code> module documentation for more information.</p>
+
 <h3>Card object</h3>
 
 <p>If you chose to use the server-to-server method of creating payment methods,
@@ -337,9 +361,12 @@ you are using the server-to-server method.</p>
 
 <p>Copyright (c)2011, by Branko Vukelic</p>
 
-<p>Configuration methods and settings for Daimyo. The three main objects a 
-typical integration requires from this module are the <code>configure()</code> and 
-<code>option()</code> methods, and the <code>settings</code> object.</p>
+<p>Configuration methods and settings for Daimyo. All startup configuration
+settings are set using the <code>config.configure()</code> and <code>config.option()</code>
+methods. Most options can only be set once, and subsequent attempts to set
+them will result in an error. To avoid this, pass the
+<code>allowMultipleSetOption</code> option to <code>config.configure()</code> and set it to 
+<code>true</code>. (The option has a long name to prevent accidental usage.)</p>
 
 <ul><li><strong>author</strong>: <em>Branko</em>
 Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
@@ -348,18 +375,20 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 <td class="code">
 <pre><code><span class="keyword">var</span> <span class="variable">config</span> = <span class="variable">exports</span>;
 <span class="keyword">var</span> <span class="variable">util</span> = <span class="variable">require</span>(<span class="string">'util'</span>);
+<span class="keyword">var</span> <span class="class">DaimyoError</span> = <span class="variable">require</span>(<span class="string">'./error'</span>);
 <span class="keyword">var</span> <span class="variable">samurayKeyRe</span> = <span class="regexp">/^[0-9a-f]{24}$/</span>;
+<span class="keyword">var</span> <span class="variable">isConfigured</span> = <span class="variable">false</span>;
 
 <span class="variable">config</span>.<span class="class">DAIMYO_VERSION</span> = <span class="string">'0.0.1'</span>;</code></pre>
 </td>
 </tr>
 <tr class="code">
 <td class="docs">
-<h2>config.settings</h2>
+<h2>settings</h2>
 
 <p><em>Master configuration settings for Daimyo</em></p>
 
-<p>The <code>conifig.settings</code> contain all the code configuration options that 
+<p>The <code>settings</code> object contains all the core configuration options that 
 affect the way certain things work (or not), and the Samurai gateway 
 credentials. You should <em>not</em> access this object directly. The correct way
 to access and set the settings is through either <code>configure()</code> or 
@@ -374,20 +403,24 @@ specifying the appropriate options in transaction objects)</li><li><em>sandbox</
 you disable this in production, to remain PCI comliant, and to 
 avoid performance issues (default: true)</li></ul>
 
+<p>Only <code>currency</code> option can be set multiple times. All other options can only
+be set once using the <code>config.configure()</code> method.</p>
+
 <p>The <code>apiVersion</code> setting is present for conveinence and is should be 
 treated as a constant (i.e., read-only).
  </p>
 </td>
 <td class="code">
-<pre><code><span class="variable">config</span>.<span class="variable">settings</span> = {};
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">merchantKey</span> = <span class="string">''</span>;
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">apiPassword</span> = <span class="string">''</span>;
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">processorId</span> = <span class="string">''</span>;
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">currency</span> = <span class="string">'USD'</span>;
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">sandbox</span> = <span class="variable">false</span>;
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">enabled</span> = <span class="variable">true</span>; <span class="comment">// Does not make any actual API calls if false</span>
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">debug</span> = <span class="variable">false</span>; <span class="comment">// Enables *blocking* debug output to STDOUT</span>
-<span class="variable">config</span>.<span class="variable">settings</span>.<span class="variable">apiVersion</span> = <span class="number integer">1</span>; <span class="comment">// Don't change this... unless you need to</span></code></pre>
+<pre><code><span class="keyword">var</span> <span class="variable">settings</span> = {};
+<span class="variable">settings</span>.<span class="variable">merchantKey</span> = <span class="string">''</span>;
+<span class="variable">settings</span>.<span class="variable">apiPassword</span> = <span class="string">''</span>;
+<span class="variable">settings</span>.<span class="variable">processorId</span> = <span class="string">''</span>;
+<span class="variable">settings</span>.<span class="variable">currency</span> = <span class="string">'USD'</span>;
+<span class="variable">settings</span>.<span class="variable">sandbox</span> = <span class="variable">false</span>;
+<span class="variable">settings</span>.<span class="variable">enabled</span> = <span class="variable">true</span>; <span class="comment">// Does not make any actual API calls if false</span>
+<span class="variable">settings</span>.<span class="variable">debug</span> = <span class="variable">false</span>; <span class="comment">// Enables *blocking* debug output to STDOUT</span>
+<span class="variable">settings</span>.<span class="variable">apiVersion</span> = <span class="number integer">1</span>; <span class="comment">// Don't change this... unless you need to</span>
+<span class="variable">settings</span>.<span class="variable">allowMultipleSetOption</span> = <span class="variable">false</span>;</code></pre>
 </td>
 </tr>
 <tr class="code">
@@ -397,8 +430,13 @@ treated as a constant (i.e., read-only).
 <p><em>Set global Daimyo configuration options</em></p>
 
 <p>This method should be used before using any of the Daimyo's functions. It
-sets the options in the <code>config.settings</code> object, and performs basic 
-validation of the options before doing so.</p>
+sets the options in the <code>settings</code> object, and performs basic validation 
+of the options before doing so.</p>
+
+<p>Unless you also pass it the <code>allowMultipleSetOption</code> option with value set 
+to <code>true</code>, you will only be able to call this method once. This is done to 
+prevent accidental calls to this method to modify critical options that may
+affect the security and/or correct operation of your system.</p>
 
 <p>This method depends on <code>config.option()</code> method to set the individual 
 options.</p>
@@ -413,11 +451,12 @@ options.</p>
 <pre><code><span class="variable">config</span>.<span class="variable">configure</span> = <span class="keyword">function</span>(<span class="variable">opts</span>) {
   <span class="variable">debug</span>(<span class="string">'Configuring Daimyo with: \n'</span> + <span class="variable">util</span>.<span class="variable">inspect</span>(<span class="variable">opts</span>));
   <span class="keyword">if</span> (!<span class="variable">opts</span>.<span class="variable">merchantKey</span> || !<span class="variable">opts</span>.<span class="variable">apiPassword</span> || !<span class="variable">opts</span>.<span class="variable">processorId</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">Error</span>(<span class="string">'Incomplete Samurai API credentials'</span>);
+    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Incomplete Samurai API credentials'</span>, <span class="variable">opts</span>);
   }
   <span class="class">Object</span>.<span class="variable">keys</span>(<span class="variable">opts</span>).<span class="variable">forEach</span>(<span class="keyword">function</span>(<span class="variable">key</span>) {
     <span class="variable">config</span>.<span class="variable">option</span>(<span class="variable">key</span>, <span class="variable">opts</span>[<span class="variable">key</span>]);
   });
+  <span class="variable">isConfigured</span> = <span class="variable">true</span>;
 };</code></pre>
 </td>
 </tr>
@@ -430,6 +469,15 @@ options.</p>
 <p>If value is not provided this method returns the value of the named
 configuration option key. Otherwise, it sets the value and returns it.</p>
 
+<p>Setting values can only be set once for most options. An error will be 
+thrown if you try to set an option more than once. This restriction exist
+to prevent accidental and/or malicious manipulation of critical Daimyo 
+configuration options.</p>
+
+<p>During testing, you may set the <code>allowMultipleSetOption</code> to <code>true</code> in order
+to enable multiple setting of protected options. Note that once this option
+is set to <code>false</code> it can no longer be set to true.</p>
+
 <p>Samurai API credentials are additionally checked for consistency. If they 
 do not appear to be valid keys, an error will be thrown.</p>
 
@@ -439,34 +487,44 @@ do not appear to be valid keys, an error will be thrown.</p>
 </td>
 <td class="code">
 <pre><code><span class="variable">config</span>.<span class="variable">option</span> = <span class="keyword">function</span>(<span class="variable">option</span>, <span class="variable">value</span>) {
-  <span class="keyword">if</span> (<span class="variable">value</span>) {
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="variable">value</span> !== <span class="string">'undefined'</span>) {
     <span class="variable">debug</span>(<span class="string">'Setting Daimyo key `'</span> + <span class="variable">option</span> + <span class="string">'` to `'</span> + <span class="variable">value</span>.<span class="variable">toString</span>() + <span class="string">'`'</span>);
+    
+    <span class="comment">// Do not allow an option to be set twice unless it's `currency`</span>
+    <span class="keyword">if</span> (<span class="variable">isConfigured</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; 
+        !<span class="variable">settings</span>.<span class="variable">allowMultipleSetOption</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; 
+        <span class="variable">option</span> !== <span class="string">'currency'</span>) {
+      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(
+        <span class="string">'system'</span>, 
+        <span class="string">'Option '</span> + <span class="variable">option</span> + <span class="string">' is already locked'</span>, 
+        <span class="variable">option</span>);
+    }
+
+    <span class="keyword">switch</span> (<span class="variable">option</span>) {
+    <span class="keyword">case</span> <span class="string">'merchantKey'</span>:
+    <span class="keyword">case</span> <span class="string">'apiPassword'</span>:
+    <span class="keyword">case</span> <span class="string">'processorId'</span>:
+      <span class="comment">// Throw if doesn't look like valid key</span>
+      <span class="keyword">if</span> (!<span class="variable">samurayKeyRe</span>.<span class="variable">exec</span>(<span class="variable">value</span>)) {
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Invalid setting'</span>, <span class="variable">option</span>);
+      }
+      <span class="variable">settings</span>[<span class="variable">option</span>] = <span class="variable">value</span>;
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'currency'</span>:
+      <span class="variable">settings</span>[<span class="variable">option</span>] = <span class="variable">value</span>;
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'sandbox'</span>:
+    <span class="keyword">case</span> <span class="string">'enabled'</span>:
+    <span class="keyword">case</span> <span class="string">'debug'</span>:
+    <span class="keyword">case</span> <span class="string">'allowMultipleSetOption'</span>:
+      <span class="variable">settings</span>[<span class="variable">option</span>] = <span class="class">Boolean</span>(<span class="variable">value</span>);
+      <span class="keyword">break</span>;
+    <span class="keyword">default</span>:
+      <span class="comment">// Do not allow unknown options to be set</span>
+      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Unrecognized configuration option'</span>, <span class="variable">option</span>);
+    }
   }
-  <span class="keyword">switch</span> (<span class="variable">option</span>) {
-  <span class="keyword">case</span> <span class="string">'merchantKey'</span>:
-  <span class="keyword">case</span> <span class="string">'apiPassword'</span>:
-  <span class="keyword">case</span> <span class="string">'processorId'</span>:
-    <span class="comment">// Throw if doesn't look like valid key</span>
-    <span class="keyword">if</span> (<span class="variable">value</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; !<span class="variable">samurayKeyRe</span>.<span class="variable">exec</span>(<span class="variable">value</span>)) {
-      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">Error</span>(<span class="string">'Not a valid '</span> + <span class="variable">option</span>);  
-    } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="variable">value</span>) {
-      <span class="variable">config</span>.<span class="variable">settings</span>[<span class="variable">option</span>] = <span class="variable">value</span>;
-    }
-    <span class="keyword">break</span>;
-  <span class="keyword">case</span> <span class="string">'sandbox'</span>:
-  <span class="keyword">case</span> <span class="string">'enabled'</span>:
-  <span class="keyword">case</span> <span class="string">'debug'</span>:
-    <span class="keyword">if</span> (<span class="variable">value</span>) {
-      <span class="variable">config</span>.<span class="variable">settings</span>[<span class="variable">option</span>] = <span class="class">Boolean</span>(<span class="variable">value</span>);
-    }
-    <span class="keyword">break</span>;
-  <span class="keyword">default</span>:
-    <span class="keyword">if</span> (<span class="variable">value</span>) {
-      <span class="variable">config</span>.<span class="variable">settings</span>[<span class="variable">option</span>] = <span class="variable">value</span>;
-    }
-    <span class="keyword">break</span>;
-  }
-  <span class="keyword">return</span> <span class="variable">config</span>.<span class="variable">settings</span>[<span class="variable">option</span>];
+  <span class="keyword">return</span> <span class="variable">settings</span>[<span class="variable">option</span>];
 };
 
 </code></pre>
@@ -485,8 +543,8 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 (see LICENSE)</li></ul>
 </td>
 <td class="code">
-<pre><code><span class="keyword">var</span> <span class="variable">settings</span> = <span class="variable">require</span>(<span class="string">'./config'</span>).<span class="variable">settings</span>;
-<span class="keyword">var</span> <span class="variable">debug</span> = <span class="variable">require</span>(<span class="string">'./config'</span>).<span class="variable">debug</span>;
+<pre><code><span class="keyword">var</span> <span class="variable">config</span> = <span class="variable">require</span>(<span class="string">'./config'</span>);
+<span class="keyword">var</span> <span class="variable">debug</span> = <span class="variable">config</span>.<span class="variable">debug</span>;
 <span class="keyword">var</span> <span class="variable">check</span> = <span class="variable">require</span>(<span class="string">'./check'</span>);
 <span class="keyword">var</span> <span class="class">DaimyoError</span> = <span class="variable">require</span>(<span class="string">'./error'</span>);
 <span class="keyword">var</span> <span class="variable">authpost</span> = <span class="variable">require</span>(<span class="string">'./authpost'</span>);
@@ -756,7 +814,7 @@ card.create(function(err) {
 
   <span class="variable">paymentData</span> = {
     <span class="string">'redirect_url'</span>: <span class="string">'http://example.com'</span>, <span class="comment">// Bogus URL, required by API</span>
-    <span class="string">'merchant_key'</span>: <span class="variable">settings</span>.<span class="variable">merchantKey</span>,
+    <span class="string">'merchant_key'</span>: <span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'merchantKey'</span>),
     <span class="string">'credit_card[first_name]'</span>: <span class="this">this</span>.<span class="variable">firstName</span> || <span class="string">''</span>,
     <span class="string">'credit_card[last_name]'</span>: <span class="this">this</span>.<span class="variable">lastName</span> || <span class="string">''</span>,
     <span class="string">'credit_card[address_1]'</span>: <span class="this">this</span>.<span class="variable">address1</span> || <span class="string">''</span>,
@@ -772,7 +830,7 @@ card.create(function(err) {
   };
 
   <span class="comment">// Add sandbox parameter if the sandbox config option is enabled</span>
-  <span class="keyword">if</span> (<span class="variable">settings</span>.<span class="variable">sandbox</span>) {
+  <span class="keyword">if</span> (<span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'sandbox'</span>)) {
     <span class="variable">paymentData</span>.<span class="variable">sandbox</span> = <span class="variable">true</span>;
   }
 
@@ -1010,7 +1068,6 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 <span class="keyword">var</span> <span class="variable">authpost</span> = <span class="variable">require</span>(<span class="string">'./authpost'</span>);
 <span class="keyword">var</span> <span class="variable">messages</span> = <span class="variable">require</span>(<span class="string">'./messages'</span>);
 <span class="keyword">var</span> <span class="variable">daimyoRecipes</span> = <span class="variable">require</span>(<span class="string">'./daimyo'</span>).<span class="variable">recipes</span>;
-<span class="keyword">var</span> <span class="variable">settings</span> = <span class="variable">config</span>.<span class="variable">settings</span>;
 <span class="keyword">var</span> <span class="variable">debug</span> = <span class="variable">config</span>.<span class="variable">debug</span>;
 <span class="keyword">var</span> <span class="variable">transaction</span> = <span class="variable">exports</span>;
 
@@ -1046,7 +1103,7 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
   <span class="keyword">if</span> (<span class="variable">transactionId</span>) {
     <span class="variable">subpath</span> = <span class="string">'/transactions/'</span>;
   }
-  <span class="keyword">return</span> <span class="variable">subpath</span> + (<span class="variable">transactionId</span> || <span class="variable">settings</span>.<span class="variable">processorId</span>) + <span class="string">'/'</span> + 
+  <span class="keyword">return</span> <span class="variable">subpath</span> + (<span class="variable">transactionId</span> || <span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'processorId'</span>)) + <span class="string">'/'</span> + 
     <span class="variable">type</span> + <span class="string">'.xml'</span>;
 }</code></pre>
 </td>
@@ -1103,7 +1160,7 @@ a bug, please).</p>
   <span class="comment">// Some defaults for complex transactions</span>
   <span class="keyword">if</span> (!<span class="variable">opts</span>.<span class="variable">transactionId</span>) {
     <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">type</span> = <span class="variable">opts</span>.<span class="variable">type</span>;
-    <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">currency</span> = <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">currency</span> || <span class="variable">settings</span>.<span class="variable">currency</span>;
+    <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">currency</span> = <span class="this">this</span>.<span class="variable">data</span>.<span class="variable">currency</span> || <span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'currency'</span>);
   }
   <span class="this">this</span>.<span class="variable">path</span> = <span class="variable">getTransactionPath</span>(<span class="variable">opts</span>.<span class="variable">type</span>, <span class="variable">opts</span>.<span class="variable">transactionId</span>);
 };</code></pre>
@@ -1191,210 +1248,6 @@ effectively like doing a <code>card.load()</code>. Refer to documentaiton for th
   });
 
 };
-</code></pre>
-</td>
-</tr><tr class="filename"><td><h2 id="support/ashigaru.js"><a href="#">ashigaru</a></h2></td><td>support/ashigaru.js</td></tr><tr class="code">
-<td class="docs">
-<h1>Ashigaru</h1>
-
-<p>Copyright (c)2011, by Branko Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></p>
-
-<p>jQuery plugin for making requests to Samurai payment gateway via a hidden 
-iframe.</p>
-
-<p>Ashigaru is part of Daimyo (https//github.com/HerdHound/Daimyo).</p>
-
-<h2>About the JSON parser</h2>
-
-<p>Ashigaru requires either a native JSON parser, or a 3rd party solution.</p>
-
-<p>If your environment (browser(s) you intend to support) does not provide the
-native JSON object, you can use the Crockford's implementation found on
-<a href="https://github.com/douglascrockford/JSON-js/blob/master/json2.js">on Github</a>.</p>
-
-<h2>Preparing the server</h2>
-
-<p>Before you can use this plugin, you must make sure that a valid redirect URL
-is handled on your server. Once Samurai gateway receives data from this 
-plugin, it will redirect the user to the redirect URL. The redirect URL will
-have an URL parameter called <code>payment_method_token</code> which should be a 
-24-digit hexdigest. That token identifies the payment method created by the
-user. (See the documentation for the <code>daimyo</code> module for more information
-on how to use this token.)</p>
-
-<p>Once you have performed any operations you want, you can respond to the 
-request that was made to the redirect URL. The response should be text/html,
-and it should contain at least the <code>&lt;body&gt;</code> tag, and a single <code>&lt;script&gt;</code> tag
-that contains the JSON response. A typical success response may look like 
-this:</p>
-
-<pre><code>&lt;body&gt;&lt;script&gt;({"status": "ok"})&lt;/script&gt;&lt;/body&gt;</code></pre>
-
-<p>Note that the JSON is wrapped in brackets to make it a valid object 
-expression. Otherwise, the browsers will complain.</p>
-
-<p>There is no need to add standard HTML markup because this response will
-never be rendered. Once you have set up the server-side handler to work this
-way, you are ready to start using Ashigaru.</p>
-
-<h2>Basic usage</h2>
-
-<p>Generally, it is expected that you will take care of the user-facing form
-yourself, validate the input, and extract the data into an object. The 
-object should have the following properties:</p>
-
-<ul><li><em>firstName</em>: cardholder's first name (optional)</li><li><em>lastName</em>: cardholder's last name (optional)</li><li><em>address1</em>: cardholder's address line 1 (optional)</li><li><em>address2</em>: cardholder's address line 2 (optional)</li><li><em>city</em>: city (optional)</li><li><em>state</em>: state or region (optional)</li><li><em>country</em>: country (optional)</li><li><em>zip</em>: zip/postal code (optional)</li><li><em>number</em>: card number (required)</li><li><em>csc</em>: card security code, CCV, CVV, CVC, etc (required)</li><li><em>year</em>: expiration year (optional)</li><li><em>month</em>: expiration month (optional)</li></ul>
-
-<p>As you can see, only card number and CSC (a.k.a CCV, CVC, CVV) are required,
-and other fields are optional. To increase the chance of transactions 
-actually clearing, and minimize your liability in case of trouble, you 
-should try to collect as much data as possible, but cardholder name, zip, 
-and address line 1 are probably bare minimum.</p>
-
-<p>Once you have created the object containing the cardholder data, you can 
-call Ashigaru like this:</p>
-
-<pre><code>$.ashigaru(cardData, merchantKey, redirectURL, function(err, data) {
-  // err means there was an error parsing the JSON or no data
-  // was ever returned. If all went fine, err should be null.
-  // data will contain a fully parsed JSON response.
-});</code></pre>
-
-<p>Ashigaru currently has no mechanisms for retrying a failed connection. You 
-should make sure you handle such unforeseen problems yourself.</p>
-
-<ul><li><strong>version</strong>: <em>0</em>
-.0.1</li><li><strong>author</strong>: <em>Branko</em>
-Vurkelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
-(see LICENSE)</li></ul>
-</td>
-<td class="code">
-<pre><code>(<span class="keyword">function</span>($, <span class="variable">window</span>) {
-
-  <span class="keyword">var</span> <span class="variable">originalDomain</span> = <span class="variable">window</span>.<span class="variable">document</span>.<span class="variable">domain</span>;
-  <span class="keyword">var</span> <span class="variable">samuraiURI</span> = <span class="string">'https://samurai.feefighters.com/v1/payment_methods'</span>;
-  <span class="keyword">var</span> <span class="variable">timeoutLabel</span>;
-  <span class="keyword">var</span> <span class="variable">timedOut</span> = <span class="variable">false</span>;
-  <span class="keyword">var</span> <span class="variable">timeoutInterval</span> = <span class="number integer">20000</span>; <span class="comment">// 20 seconds</span></code></pre>
-</td>
-</tr>
-<tr class="code">
-<td class="docs">
-<h2>Remove the hidden form</h2>
-</td>
-<td class="code">
-<pre><code><span class="keyword">function</span> <span class="variable">removeForm</span>() {
-    $(<span class="string">'#samurai-form'</span>).<span class="variable">remove</span>();
-    <span class="variable">removeIframe</span>();
-  }</code></pre>
-</td>
-</tr>
-<tr class="code">
-<td class="docs">
-<h2>jQuery.ashigaru(data, merchantKey, redirectURI, callback)</h2>
-
-<p><em>Create and submit hidden form to make request with</em></p>
-
-<p>The data argument is used to populate form with data. It can have any of 
-the following fields:</p>
-
-<ul><li><em>firstName</em></li><li><em>lastName</em></li><li><em>address1</em></li><li><em>address2</em></li><li><em>city</em></li><li><em>state</em></li><li><em>zip</em></li><li><em>number</em></li><li><em>csc</em></li><li><em>year</em></li><li><em>month</em></li></ul>
-
-<p>The callback is called from the load event handler on the iframe. See the
-details of the <code>onResultLoad</code> function in this module.</p>
-
-<h2></h2>
-
-<ul><li><p><strong>param</strong>: <em>Object</em>  data Object containing the data for the form</p></li><li><p><strong>param</strong>: <em>String</em>  merchantKey Samurai gateway merchant key</p></li><li><p><strong>param</strong>: <em>String</em>  redirectURI URI of the transparent redirect handler</p></li><li><p><strong>param</strong>: <em>Function</em>  callback Called with error and results</p></li></ul>
-</td>
-<td class="code">
-<pre><code>$.<span class="variable">ashigaru</span> = <span class="keyword">function</span>(<span class="variable">data</span>, <span class="variable">merchantKey</span>, <span class="variable">redirectURI</span>, <span class="variable">callback</span>) {
-    <span class="keyword">var</span> <span class="variable">form</span>;
-
-    <span class="keyword">if</span> (!<span class="variable">data</span> || !<span class="variable">merchantKey</span> || !<span class="variable">redirectURI</span> || !<span class="variable">callback</span>) {
-      <span class="keyword">throw</span> (<span class="string">'All arguments are required'</span>);
-    }
-
-    <span class="keyword">var</span> <span class="variable">fullData</span> = {
-      <span class="variable">firstName</span>: <span class="string">''</span>,
-      <span class="variable">lastName</span>: <span class="string">''</span>,
-      <span class="variable">address1</span>: <span class="string">''</span>,
-      <span class="variable">address2</span>: <span class="string">''</span>,
-      <span class="variable">city</span>: <span class="string">''</span>,
-      <span class="variable">state</span>: <span class="string">''</span>,
-      <span class="variable">zip</span>: <span class="string">''</span>,
-      <span class="variable">number</span>: <span class="string">''</span>,
-      <span class="variable">csc</span>: <span class="string">''</span>,
-      <span class="variable">year</span>: <span class="string">''</span>,
-      <span class="variable">month</span>: <span class="string">''</span>
-    };
-
-    $.<span class="variable">extend</span>(<span class="variable">fullData</span>, <span class="variable">data</span>);
-
-    <span class="keyword">var</span> <span class="variable">formHTML</span> = <span class="string">'&lt;form id=&quot;samurai-form&quot; style=&quot;display:none&quot; '</span> +
-      <span class="string">'action=&quot;$requestURI&quot; method=&quot;POST&quot; target=&quot;samurai-iframe&quot;&gt;'</span> + 
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;merchant_key&quot; value=&quot;$merchantkey&quot;&gt;'</span>+
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;redirect_url&quot; value=&quot;$redirecturl&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[first_name]&quot; value=&quot;$firstName&quot;&gt;'</span>+
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[last_name]&quot; value=&quot;$lastName&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[address_1]&quot; value=&quot;$address1&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[address_2]&quot; value=&quot;$address2&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[city]&quot; value=&quot;$city&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[state]&quot; value=&quot;$state&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[zip]&quot; value=&quot;$zip&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[card_number]&quot; value=&quot;$number&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[card_type]&quot; value=&quot;$issuer&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[cvv]&quot; value=&quot;$csc&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[expiry_year]&quot; value=&quot;$year&quot;&gt;'</span> +
-      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[expiry_month]&quot; value=&quot;$month&quot;&gt;'</span> +
-      <span class="string">'&lt;/form&gt;'</span>;
-
-    <span class="comment">// Replace non-data field placeholders and form attribute placeholders</span>
-    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$requestURI'</span>, <span class="variable">samuraiURI</span>);
-    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$merchantkey'</span>, <span class="variable">merchantKey</span>);
-    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$redirecturl'</span>, <span class="variable">redirectURI</span>);
-
-    <span class="comment">// Replace placeholders in form HTML with real data</span>
-    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">key</span> <span class="keyword">in</span> <span class="variable">fullData</span>) {
-      <span class="keyword">if</span> (<span class="variable">fullData</span>.<span class="variable">hasOwnProperty</span>(<span class="variable">key</span>)) {
-        <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$'</span> + <span class="variable">key</span>, <span class="variable">fullData</span>[<span class="variable">key</span>]);
-      }
-    }
-
-    <span class="comment">// Inject this into DOM</span>
-    <span class="variable">form</span> = $(<span class="variable">formHTML</span>);
-
-    <span class="comment">// Sanity check</span>
-    <span class="keyword">if</span> (<span class="variable">form</span>.<span class="variable">attr</span>(<span class="string">'action'</span>) === <span class="string">'$requestURI'</span>) { 
-      <span class="keyword">throw</span> <span class="string">'Form error'</span>; 
-    }
-
-    <span class="comment">// Attach the form to body</span>
-    <span class="variable">form</span>.<span class="variable">appendTo</span>(<span class="string">'body'</span>);
-
-    <span class="comment">// Submit the form</span>
-    <span class="variable">form</span>.<span class="variable">unbind</span>(<span class="string">'submit'</span>);
-    <span class="variable">form</span>.<span class="variable">submit</span>(<span class="keyword">function</span>(<span class="variable">e</span>) {
-      <span class="variable">e</span>.<span class="variable">stopPropagation</span>();
-      <span class="keyword">return</span> <span class="variable">createIframe</span>(<span class="variable">callback</span>);
-    });
-
-    <span class="comment">// Fire the timout clock at 3 seconds</span>
-    <span class="variable">timeoutLabel</span> = <span class="variable">setTimeout</span>(<span class="keyword">function</span>() {
-
-      <span class="comment">// Set the timeout flag</span>
-      <span class="variable">timedOut</span> = <span class="variable">true</span>;
-
-      <span class="comment">// Execute callback with error message</span>
-      <span class="variable">callback</span>(<span class="string">'Connection timed out'</span>);
-
-    }, <span class="variable">timeoutInterval</span>);
-
-    <span class="variable">form</span>.<span class="variable">submit</span>();
-  };
- 
-}(<span class="variable">jQuery</span>, <span class="this">this</span>));
-
 </code></pre>
 </td>
 </tr><tr class="filename"><td><h2 id="lib/check.js"><a href="#">check</a></h2></td><td>lib/check.js</td></tr><tr class="code">
@@ -1981,11 +1834,11 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 </td>
 <td class="code">
 <pre><code><span class="keyword">var</span> <span class="variable">http</span> = <span class="variable">require</span>(<span class="string">'http'</span>);
-<span class="keyword">var</span> <span class="variable">settings</span> = <span class="variable">require</span>(<span class="string">'./config'</span>).<span class="variable">settings</span>;
-<span class="keyword">var</span> <span class="variable">debug</span> = <span class="variable">require</span>(<span class="string">'./config'</span>).<span class="variable">debug</span>;
+<span class="keyword">var</span> <span class="variable">config</span> = <span class="variable">require</span>(<span class="string">'./config'</span>);
+<span class="keyword">var</span> <span class="variable">debug</span> = <span class="variable">config</span>.<span class="variable">debug</span>;
 <span class="keyword">var</span> <span class="variable">xmlutils</span> = <span class="variable">require</span>(<span class="string">'./xmlutils'</span>);
 <span class="keyword">var</span> <span class="class">DaimyoError</span> = <span class="variable">require</span>(<span class="string">'./error'</span>);
-<span class="keyword">var</span> <span class="class">API_VER</span> = <span class="variable">settings</span>.<span class="variable">apiVersion</span>;
+<span class="keyword">var</span> <span class="class">API_VER</span> = <span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'apiVersion'</span>);
 <span class="keyword">var</span> <span class="class">API_HOST</span> = <span class="string">'samurai.feefighters.com'</span>;
 <span class="keyword">var</span> <span class="class">API_URL</span> = <span class="string">'/v'</span> + <span class="class">API_VER</span>;
 <span class="keyword">var</span> <span class="class">DEFAULT_PATH</span> = <span class="string">'/payment_methods'</span>;
@@ -2045,8 +1898,8 @@ is set to <code>text/xml</code>.</p>
   <span class="keyword">var</span> <span class="variable">requestOptions</span>;
   <span class="keyword">var</span> <span class="variable">request</span>;
 
-  <span class="keyword">if</span> (!<span class="variable">settings</span>.<span class="variable">merchantKey</span> || !<span class="variable">settings</span>.<span class="variable">apiPassword</span>) {
-    <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Daimyo is not configured'</span>, <span class="variable">settings</span>));
+  <span class="keyword">if</span> (!<span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'merchantKey'</span>) || !<span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'apiPassword'</span>)) {
+    <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Daimyo is not configured'</span>, <span class="keyword">null</span>));
   }
 
   <span class="keyword">if</span> (!<span class="variable">callback</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="keyword">typeof</span> <span class="variable">opts</span> === <span class="string">'function'</span>) {
@@ -2119,7 +1972,7 @@ is set to <code>text/xml</code>.</p>
         <span class="variable">error</span> = <span class="variable">parseMessages</span>(<span class="variable">res</span>.<span class="variable">body</span>);
       }
       
-      <span class="variable">debug</span>(<span class="string">'Finished request with body: '</span> + <span class="variable">res</span>.<span class="variable">body</span>);
+      <span class="variable">debug</span>(<span class="string">'Finished request to '</span> + <span class="variable">path</span> + <span class="string">' with body: '</span> + <span class="variable">res</span>.<span class="variable">body</span>);
       <span class="variable">callback</span>(<span class="variable">error</span>, <span class="variable">res</span>);
     });
   });
@@ -2275,6 +2128,210 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 };
 
 <span class="variable">module</span>.<span class="variable">exports</span> = <span class="class">DaimyoError</span>;
+</code></pre>
+</td>
+</tr><tr class="filename"><td><h2 id="support/ashigaru.js"><a href="#">ashigaru</a></h2></td><td>support/ashigaru.js</td></tr><tr class="code">
+<td class="docs">
+<h1>Ashigaru</h1>
+
+<p>Copyright (c)2011, by Branko Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></p>
+
+<p>jQuery plugin for making requests to Samurai payment gateway via a hidden 
+iframe.</p>
+
+<p>Ashigaru is part of Daimyo (https//github.com/HerdHound/Daimyo).</p>
+
+<h2>About the JSON parser</h2>
+
+<p>Ashigaru requires either a native JSON parser, or a 3rd party solution.</p>
+
+<p>If your environment (browser(s) you intend to support) does not provide the
+native JSON object, you can use the Crockford's implementation found on
+<a href="https://github.com/douglascrockford/JSON-js/blob/master/json2.js">on Github</a>.</p>
+
+<h2>Preparing the server</h2>
+
+<p>Before you can use this plugin, you must make sure that a valid redirect URL
+is handled on your server. Once Samurai gateway receives data from this 
+plugin, it will redirect the user to the redirect URL. The redirect URL will
+have an URL parameter called <code>payment_method_token</code> which should be a 
+24-digit hexdigest. That token identifies the payment method created by the
+user. (See the documentation for the <code>daimyo</code> module for more information
+on how to use this token.)</p>
+
+<p>Once you have performed any operations you want, you can respond to the 
+request that was made to the redirect URL. The response should be text/html,
+and it should contain at least the <code>&lt;body&gt;</code> tag, and a single <code>&lt;script&gt;</code> tag
+that contains the JSON response. A typical success response may look like 
+this:</p>
+
+<pre><code>&lt;body&gt;&lt;script&gt;({"status": "ok"})&lt;/script&gt;&lt;/body&gt;</code></pre>
+
+<p>Note that the JSON is wrapped in brackets to make it a valid object 
+expression. Otherwise, the browsers will complain.</p>
+
+<p>There is no need to add standard HTML markup because this response will
+never be rendered. Once you have set up the server-side handler to work this
+way, you are ready to start using Ashigaru.</p>
+
+<h2>Basic usage</h2>
+
+<p>Generally, it is expected that you will take care of the user-facing form
+yourself, validate the input, and extract the data into an object. The 
+object should have the following properties:</p>
+
+<ul><li><em>firstName</em>: cardholder's first name (optional)</li><li><em>lastName</em>: cardholder's last name (optional)</li><li><em>address1</em>: cardholder's address line 1 (optional)</li><li><em>address2</em>: cardholder's address line 2 (optional)</li><li><em>city</em>: city (optional)</li><li><em>state</em>: state or region (optional)</li><li><em>country</em>: country (optional)</li><li><em>zip</em>: zip/postal code (optional)</li><li><em>number</em>: card number (required)</li><li><em>csc</em>: card security code, CCV, CVV, CVC, etc (required)</li><li><em>year</em>: expiration year (optional)</li><li><em>month</em>: expiration month (optional)</li></ul>
+
+<p>As you can see, only card number and CSC (a.k.a CCV, CVC, CVV) are required,
+and other fields are optional. To increase the chance of transactions 
+actually clearing, and minimize your liability in case of trouble, you 
+should try to collect as much data as possible, but cardholder name, zip, 
+and address line 1 are probably bare minimum.</p>
+
+<p>Once you have created the object containing the cardholder data, you can 
+call Ashigaru like this:</p>
+
+<pre><code>$.ashigaru(cardData, merchantKey, redirectURL, function(err, data) {
+  // err means there was an error parsing the JSON or no data
+  // was ever returned. If all went fine, err should be null.
+  // data will contain a fully parsed JSON response.
+});</code></pre>
+
+<p>Ashigaru currently has no mechanisms for retrying a failed connection. You 
+should make sure you handle such unforeseen problems yourself.</p>
+
+<ul><li><strong>version</strong>: <em>0</em>
+.0.1</li><li><strong>author</strong>: <em>Branko</em>
+Vurkelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
+(see LICENSE)</li></ul>
+</td>
+<td class="code">
+<pre><code>(<span class="keyword">function</span>($, <span class="variable">window</span>) {
+
+  <span class="keyword">var</span> <span class="variable">originalDomain</span> = <span class="variable">window</span>.<span class="variable">document</span>.<span class="variable">domain</span>;
+  <span class="keyword">var</span> <span class="variable">samuraiURI</span> = <span class="string">'https://samurai.feefighters.com/v1/payment_methods'</span>;
+  <span class="keyword">var</span> <span class="variable">timeoutLabel</span>;
+  <span class="keyword">var</span> <span class="variable">timedOut</span> = <span class="variable">false</span>;
+  <span class="keyword">var</span> <span class="variable">timeoutInterval</span> = <span class="number integer">20000</span>; <span class="comment">// 20 seconds</span></code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>Remove the hidden form</h2>
+</td>
+<td class="code">
+<pre><code><span class="keyword">function</span> <span class="variable">removeForm</span>() {
+    $(<span class="string">'#samurai-form'</span>).<span class="variable">remove</span>();
+    <span class="variable">removeIframe</span>();
+  }</code></pre>
+</td>
+</tr>
+<tr class="code">
+<td class="docs">
+<h2>jQuery.ashigaru(data, merchantKey, redirectURI, callback)</h2>
+
+<p><em>Create and submit hidden form to make request with</em></p>
+
+<p>The data argument is used to populate form with data. It can have any of 
+the following fields:</p>
+
+<ul><li><em>firstName</em></li><li><em>lastName</em></li><li><em>address1</em></li><li><em>address2</em></li><li><em>city</em></li><li><em>state</em></li><li><em>zip</em></li><li><em>number</em></li><li><em>csc</em></li><li><em>year</em></li><li><em>month</em></li></ul>
+
+<p>The callback is called from the load event handler on the iframe. See the
+details of the <code>onResultLoad</code> function in this module.</p>
+
+<h2></h2>
+
+<ul><li><p><strong>param</strong>: <em>Object</em>  data Object containing the data for the form</p></li><li><p><strong>param</strong>: <em>String</em>  merchantKey Samurai gateway merchant key</p></li><li><p><strong>param</strong>: <em>String</em>  redirectURI URI of the transparent redirect handler</p></li><li><p><strong>param</strong>: <em>Function</em>  callback Called with error and results</p></li></ul>
+</td>
+<td class="code">
+<pre><code>$.<span class="variable">ashigaru</span> = <span class="keyword">function</span>(<span class="variable">data</span>, <span class="variable">merchantKey</span>, <span class="variable">redirectURI</span>, <span class="variable">callback</span>) {
+    <span class="keyword">var</span> <span class="variable">form</span>;
+
+    <span class="keyword">if</span> (!<span class="variable">data</span> || !<span class="variable">merchantKey</span> || !<span class="variable">redirectURI</span> || !<span class="variable">callback</span>) {
+      <span class="keyword">throw</span> (<span class="string">'All arguments are required'</span>);
+    }
+
+    <span class="keyword">var</span> <span class="variable">fullData</span> = {
+      <span class="variable">firstName</span>: <span class="string">''</span>,
+      <span class="variable">lastName</span>: <span class="string">''</span>,
+      <span class="variable">address1</span>: <span class="string">''</span>,
+      <span class="variable">address2</span>: <span class="string">''</span>,
+      <span class="variable">city</span>: <span class="string">''</span>,
+      <span class="variable">state</span>: <span class="string">''</span>,
+      <span class="variable">zip</span>: <span class="string">''</span>,
+      <span class="variable">number</span>: <span class="string">''</span>,
+      <span class="variable">csc</span>: <span class="string">''</span>,
+      <span class="variable">year</span>: <span class="string">''</span>,
+      <span class="variable">month</span>: <span class="string">''</span>
+    };
+
+    $.<span class="variable">extend</span>(<span class="variable">fullData</span>, <span class="variable">data</span>);
+
+    <span class="keyword">var</span> <span class="variable">formHTML</span> = <span class="string">'&lt;form id=&quot;samurai-form&quot; style=&quot;display:none&quot; '</span> +
+      <span class="string">'action=&quot;$requestURI&quot; method=&quot;POST&quot; target=&quot;samurai-iframe&quot;&gt;'</span> + 
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;merchant_key&quot; value=&quot;$merchantkey&quot;&gt;'</span>+
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;redirect_url&quot; value=&quot;$redirecturl&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[first_name]&quot; value=&quot;$firstName&quot;&gt;'</span>+
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[last_name]&quot; value=&quot;$lastName&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[address_1]&quot; value=&quot;$address1&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[address_2]&quot; value=&quot;$address2&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[city]&quot; value=&quot;$city&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[state]&quot; value=&quot;$state&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[zip]&quot; value=&quot;$zip&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[card_number]&quot; value=&quot;$number&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[card_type]&quot; value=&quot;$issuer&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[cvv]&quot; value=&quot;$csc&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[expiry_year]&quot; value=&quot;$year&quot;&gt;'</span> +
+      <span class="string">'&lt;input type=&quot;hidden&quot; name=&quot;credit_card[expiry_month]&quot; value=&quot;$month&quot;&gt;'</span> +
+      <span class="string">'&lt;/form&gt;'</span>;
+
+    <span class="comment">// Replace non-data field placeholders and form attribute placeholders</span>
+    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$requestURI'</span>, <span class="variable">samuraiURI</span>);
+    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$merchantkey'</span>, <span class="variable">merchantKey</span>);
+    <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$redirecturl'</span>, <span class="variable">redirectURI</span>);
+
+    <span class="comment">// Replace placeholders in form HTML with real data</span>
+    <span class="keyword">for</span> (<span class="keyword">var</span> <span class="variable">key</span> <span class="keyword">in</span> <span class="variable">fullData</span>) {
+      <span class="keyword">if</span> (<span class="variable">fullData</span>.<span class="variable">hasOwnProperty</span>(<span class="variable">key</span>)) {
+        <span class="variable">formHTML</span> = <span class="variable">formHTML</span>.<span class="variable">replace</span>(<span class="string">'$'</span> + <span class="variable">key</span>, <span class="variable">fullData</span>[<span class="variable">key</span>]);
+      }
+    }
+
+    <span class="comment">// Inject this into DOM</span>
+    <span class="variable">form</span> = $(<span class="variable">formHTML</span>);
+
+    <span class="comment">// Sanity check</span>
+    <span class="keyword">if</span> (<span class="variable">form</span>.<span class="variable">attr</span>(<span class="string">'action'</span>) === <span class="string">'$requestURI'</span>) { 
+      <span class="keyword">throw</span> <span class="string">'Form error'</span>; 
+    }
+
+    <span class="comment">// Attach the form to body</span>
+    <span class="variable">form</span>.<span class="variable">appendTo</span>(<span class="string">'body'</span>);
+
+    <span class="comment">// Submit the form</span>
+    <span class="variable">form</span>.<span class="variable">unbind</span>(<span class="string">'submit'</span>);
+    <span class="variable">form</span>.<span class="variable">submit</span>(<span class="keyword">function</span>(<span class="variable">e</span>) {
+      <span class="variable">e</span>.<span class="variable">stopPropagation</span>();
+      <span class="keyword">return</span> <span class="variable">createIframe</span>(<span class="variable">callback</span>);
+    });
+
+    <span class="comment">// Fire the timout clock at 3 seconds</span>
+    <span class="variable">timeoutLabel</span> = <span class="variable">setTimeout</span>(<span class="keyword">function</span>() {
+
+      <span class="comment">// Set the timeout flag</span>
+      <span class="variable">timedOut</span> = <span class="variable">true</span>;
+
+      <span class="comment">// Execute callback with error message</span>
+      <span class="variable">callback</span>(<span class="string">'Connection timed out'</span>);
+
+    }, <span class="variable">timeoutInterval</span>);
+
+    <span class="variable">form</span>.<span class="variable">submit</span>();
+  };
+ 
+}(<span class="variable">jQuery</span>, <span class="this">this</span>));
+
 </code></pre>
 </td>
 </tr>	</body>
