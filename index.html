@@ -4,54 +4,58 @@
   <head>
     <title>Daimyo: Samurai Gateway API client for Node.js</title>
     <style>
-      html, body { font-family: Arial, Helvetica, Sans, sans-serif; font-size: 14px; color: #333; background: #dda; line-height: 140%; }
-      body { width: 750px; margin: 0 auto; padding: 1em 2em 4em; border-left: 2px solid #333; }
+      html, body { font-family: Georgia, "Century Schoolbook", serif; font-size: 14px; color: #333; line-height: 140%; }
+      html { background: url('images/background.png'); }
+      body { width: 750px; margin: 0 auto; padding: 0 2em 4em; }
       a { text-decoration: none; }
-      h1 { border-bottom: 1px solid #fff; }
-      h2 { margin-top: 2em; }
+      h1 { background: url('images/logo.png') no-repeat; text-indent: -9999px; overflow: hidden; width: 201px; height: 257px; position: relative; top: -50px; float: left; }
+      h2, h3 { font-family: Arial, Helvetica, sans-serif; }
+      h2 { margin-top: 2em; color: #aa0000; }
       h3 { font-size: 100%; }
+      #page { padding-left: 220px; }
     </style>
   </head>
   <body>
     <h1>Daimyo: Samurai Gateway API client for Node.js</h1>
-    <p><a href="http://www.feefighters.com/samurai">Samurai</a> is a payment gateway by the popular <a href="http://www.feefighters.com/">FeeFighters</a> payment processor comparison service</p>
-    <p>Daimyo is a <a href="http://nodejs.org/">Node.js</a> library for integrating Samurai into your Node.js application.</p>
-    <h2>Documentation</h2>
-    <ul>
-      <li><a href="docs/">pre-release version</a></li>
-      <li><a href="docs/0.0.3.html">v0.0.3 (latest)</a></li>
-      <li><a href="docs/0.0.2.html">v0.0.2</a></li>
-      <li><a href="docs/0.0.1.html">v0.0.1</a></li>
-    </ul>
-    <h2>Installation</h2>
-    <pre><code>npm install daimyo</code></pre>
-    <h2>FAQ</h2>
-    <h3>Why should I use Daimyo and not Samurai API directly?</h3>
-    <p>If you want to use the API directly, sure. I won't stand in your way. In fact it may be a good idea to first try the raw API, just to get a feel of how badly you want to use Daimyo!</p>
-    <h3>Is Daimyo PCI compliant?</h3>
-    <p>No. Daimyo itself is not atested for PCI-compliance, but you can use Samurai (and Daimyo) in ways that make PCI irrelevant for you.And you don't want to know what I think of PCI. Also, Daimyo is quite new so it should not be considered otherwise secure yet. When it reaches version 0.1, though, it should be pretty secure and battle-tested.</p>
-    <h3>So what DO you think about PCI?</h3>
-    <p>Next question!</p>
-    <h3>Does it mean that Daimyo is not secure?</h3>
-    <p>A lot of work has been done on securing Daimyo, not even against unvalidated user input, but also against potential API misuse by malicious code or accident. However, the work on security is still not quite done. Current target for <em>the</em> paranoid implementation is v0.1.</p>
-    <h3>Should I use the pre-release version?</h3>
-    <p>Only if you're retarded. Seriously, though. No, please don't use the pre-release version and come to me with a story of lost millions in profit and reputation. I push all kinds of shitty code (pardon me, but I could not find a better term) and then come back later and fix it. And if you use the shitty version, well... bad timing. So you should generally stick to slightly less shitty release versions.
-    <h3>But pre-release version has this awesome feature X!</h3>
-    <p>Yes, it sure does. Next question!</p>
-    <h3>Should I use the <code>daimyo.Card.create()</code> method?</h3>
-    <p>Only use this method if you are reasonably confident that you will be able to achieve full PCI compliance. In other words, you should generally avoid doing that.</p>
-    <h3>Where can I get Daimyo?</h3>
-    <p>You can get Daimyo <a href="http://search.npmjs.org/#/daimyo">via npm</a>, or <a href="https://github.com/HerdHound/Daimyo">via GitHub</a>
-    <h3>I found a bug!</h3>
-    <p>Hey, thanks for that! Please report it in the <a href="https://github.com/HerdHound/Daimyo/issues">issue tracker</a>. When filing a bug, please try to include as much information as possible. Most helpful information is the piece of code that triggered the error, maybe a small test app (or even better, a unit test!), and your configuration. Oh, and don't forget the exact error message.</p>
-    <h3>I want feature X. Can I file an issue for that?</h3>
-    <p>Yes, please!</p>
-    <h3>I have some personal issues. Can I file that as well?</h3>
-    <p>No.</p>
-    <h3>But it <em>is</em> an issue tracker isn't it?</h3>
-    <p>Next question!</p>
-    <h3>I have a patch. Can I send you a pull request?</h3>
-    <p>Only if it has inline documentation and tests that actually pass. Nah. That was just to scare you. But seriously, tests and docs would be highly appreciated. Also, indent the code with 2 spaces, not 4, and no tabs please. Anyway, take a look at my code and you'll get the idea of what's required.</p>
-    <h2>Who uses Diamyo?</h2>
-    <p>Me and Santa. If you use it too, join us! <a href="mailto:branko@herdhound.com">email</a> me and I'll add you to the list here.</p>
+    <div id="page">
+      <p><em><a href="http://www.feefighters.com/samurai">Samurai</a> is a payment gateway by the popular <a href="http://www.feefighters.com/">FeeFighters</a> payment processor comparison service. Daimyo is a <a href="http://nodejs.org/">Node.js</a> library for integrating Samurai into your Node.js application.</em></p>
+      <h2>Documentation</h2>
+      <ul>
+        <li><a href="docs/">pre-release version</a></li>
+        <li><a href="docs/0.0.3.html">v0.0.3 (latest)</a></li>
+        <li><a href="docs/0.0.2.html">v0.0.2</a></li>
+        <li><a href="docs/0.0.1.html">v0.0.1</a></li>
+      </ul>
+      <h2>Installation</h2>
+      <pre><code>npm install daimyo</code></pre>
+      <h2>FAQ</h2>
+      <h3>Why should I use Daimyo and not Samurai API directly?</h3>
+      <p>If you want to use the API directly, sure. I won't stand in your way. In fact it may be a good idea to first try the raw API, just to get a feel of how badly you want to use Daimyo!</p>
+      <h3>Is Daimyo PCI compliant?</h3>
+      <p>No. Daimyo itself is not atested for PCI-compliance, but you can use Samurai (and Daimyo) in ways that make PCI irrelevant for you.And you don't want to know what I think of PCI. Also, Daimyo is quite new so it should not be considered otherwise secure yet. When it reaches version 0.1, though, it should be pretty secure and battle-tested.</p>
+      <h3>So what DO you think about PCI?</h3>
+      <p>Next question!</p>
+      <h3>Does it mean that Daimyo is not secure?</h3>
+      <p>A lot of work has been done on securing Daimyo, not even against unvalidated user input, but also against potential API misuse by malicious code or accident. However, the work on security is still not quite done. Current target for <em>the</em> paranoid implementation is v0.1.</p>
+      <h3>Should I use the pre-release version?</h3>
+      <p>Only if you're retarded. Seriously, though. No, please don't use the pre-release version and come to me with a story of lost millions in profit and reputation. I push all kinds of shitty code (pardon me, but I could not find a better term) and then come back later and fix it. And if you use the shitty version, well... bad timing. So you should generally stick to slightly less shitty release versions.
+      <h3>But pre-release version has this awesome feature X!</h3>
+      <p>Yes, it sure does. Next question!</p>
+      <h3>Should I use the <code>daimyo.Card.create()</code> method?</h3>
+      <p>Only use this method if you are reasonably confident that you will be able to achieve full PCI compliance. In other words, you should generally avoid doing that.</p>
+      <h3>Where can I get Daimyo?</h3>
+      <p>You can get Daimyo <a href="http://search.npmjs.org/#/daimyo">via npm</a>, or <a href="https://github.com/HerdHound/Daimyo">via GitHub</a>
+      <h3>I found a bug!</h3>
+      <p>Hey, thanks for that! Please report it in the <a href="https://github.com/HerdHound/Daimyo/issues">issue tracker</a>. When filing a bug, please try to include as much information as possible. Most helpful information is the piece of code that triggered the error, maybe a small test app (or even better, a unit test!), and your configuration. Oh, and don't forget the exact error message.</p>
+      <h3>I want feature X. Can I file an issue for that?</h3>
+      <p>Yes, please!</p>
+      <h3>I have some personal issues. Can I file that as well?</h3>
+      <p>No.</p>
+      <h3>But it <em>is</em> an issue tracker isn't it?</h3>
+      <p>Next question!</p>
+      <h3>I have a patch. Can I send you a pull request?</h3>
+      <p>Only if it has inline documentation and tests that actually pass. Nah. That was just to scare you. But seriously, tests and docs would be highly appreciated. Also, indent the code with 2 spaces, not 4, and no tabs please. Anyway, take a look at my code and you'll get the idea of what's required.</p>
+      <h2>Who uses Diamyo?</h2>
+      <p>Me and Santa. If you use it too, join us! <a href="mailto:branko@herdhound.com">email</a> me and I'll add you to the list here.</p>
+    </div>
 </html>
