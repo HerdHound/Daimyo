@@ -127,8 +127,7 @@ sandbox processor ID.</p>
 <p>When using the Samurai payment gateway, you basically deal with two separate
 concepts: payment methods (cards) and transactions (making/loosing money).
 Daimyo's API reflects this dualism. It provides two main constructors that you
-will use most of the time: <code>Card</code> and <code>Transaction</code> (and variants of
-<code>Transaction</code>).</p>
+will use most of the time: <code>Card</code> and <code>Transaction</code>.</p>
 
 <p>Once created the card objects have the following methods:</p>
 
@@ -136,10 +135,8 @@ will use most of the time: <code>Card</code> and <code>Transaction</code> (and v
 
 <p>(See notes about PCI compliance before you start using some of these methods.)</p>
 
-<p>The transaction object is constructed using several constructors (they are not
-yet available, though) that are specialized for different types of
-transactions, or the generic <code>Transaction</code> constructor. In each case, the
-constructor only has one method:</p>
+<p>The transaction object is constructed using the <code>Transaction</code> constructor. The
+transaction object only has one method:</p>
 
 <ul><li><code>transaction.process()</code></li></ul>
 
@@ -149,26 +146,32 @@ the payment method associated with the card.</p>
 <h3>Notes on PCI compliance</h3>
 
 <p>There are two ways you can use the Samurai gateway with Daimyo in terms of
-payment method. One is server-to-server, where you handle the cardholder data,
-and pass them on to the gateway. Another method is transparent redirect, where
-you set up a web form that submits directly to the gateway, and you only
-receive a <em>payment method token</em> that is associated with whatever data the 
-user submitted. </p>
+payment methods management. One is server-to-server, where you handle the 
+cardholder data, and pass them on to the gateway. Another method is transparent
+redirect, where you set up a web form that submits directly to the gateway, and
+you only receive a <em>payment method token</em> that is associated with whatever data
+the user submitted. </p>
 
 <p>While the server-to-server method is useful in cases a web form required for
 transparent redirect method cannot be set up (for example, for single-page AJAX
 apps, where cross-site request restrictions apply), you have to be aware that
 full PCI compliance for class C merchants is still required. Class C PCI
-compliance may involve on-site audits, or audits of any 3rd party
+compliance may involve on-site audits and/or audits of any 3rd party
 infrastructure you might be using, and many other steps. You can read more
 about PCI compliance at
 <a href="https://www.pcisecuritystandards.org/">www.pcisecuritystandards.org</a>.</p>
 
 <p>Also note that Daimyo itself has <em>not</em> been atested or tested for PCI
-compliance. While Daimyo's author sincerely believes that Daimyo is reasonably
-safe (or, rather, will be when a full release is made), we do not, and cannot
-make any guarantees to that effect, either explicit or implied, as noted in the
-<a href="https://github.com/HerdHound/Daimyo/blob/master/LICENSE">LICENSE</a>.</p>
+compliance, so use of Daimyo in your environment may negatively affect your
+capacity to achieve PCI compliance. While Daimyo's author sincerely believes
+that Daimyo is reasonably safe (or, rather, will be when a full release is
+made), we do not, and cannot make any guarantees to that effect, either
+explicit or implied, as noted in the
+<a href="https://github.com/HerdHound/Daimyo/blob/master/LICENSE">LICENSE</a>. Daimyo is
+provided to you as is, with no implied and/or explicit warranties of any sort.
+In other words, you are on your own using Daimyo if you are looking for PCI
+compliance. Good news is, source code is availabe, so you can make any
+necessary adjustments. (Don't forget to send us a pull request if you do so.)</p>
 
 <h3>Ashigaru and single-page AJAX apps</h3>
 
@@ -179,6 +182,16 @@ subdirectory. For more information on how to set up your server for use with
 Ashigaru, and basic usage of this plugin, take a look at Ashigaru's
 documentation. You can also find a 
 <a href="http://herdhound.github.com/Daimyo/example/ashigaru/">functional demo</a> online.</p>
+
+<p>Ashigaru has been tested only on the latest browsers. Browsers that are
+currently supported by Ashigaru are:</p>
+
+<ul><li>Firefox 5.0+ (probably works on 4.0 and older as well)</li><li>Internet Explorer 8.0+ (probably works on older, but IE6 is probably broken)</li><li>Opera 11.0+ (not sure it would work in older releases)</li><li>Chrome 13.0+ (should work in most version of Chrome)</li></ul>
+
+<p>Basically, ashigaru is a very simple plugin which uses technology that has been
+available for quite some time, so there is no reason to believe it wouldn't
+work on older browsers. If you bump into problems with older browsers, however,
+please file a bug report.</p>
 
 <h3>Configuration</h3>
 
@@ -212,7 +225,7 @@ you app's configuration.</p>
 
 <h3>Configuration locking</h3>
 
-<p>Note that Daimyo's performs configuration-locking after you call
+<p>Note that Daimyo performs configuration-locking after you call
 <code>daimyo.configure()</code> for the first time (and if that's successful). This
 means that you will not be able to call <code>daimyo.configure()</code> multiple times
 to set different options. You need to set all options beforehand. </p>
@@ -220,13 +233,19 @@ to set different options. You need to set all options beforehand. </p>
 <p>This is a security feature that prevents accidental/malicious resetting of
 critical options. </p>
 
-<p>Calling <code>daimyo.option()</code> will also fail after configuration has been locked,
-but you can use multiple calls to <code>daimyo.options()</code> to set an option
-multiple times and it won't lead to locking.</p>
+<p>Calling <code>daimyo.option()</code> will also fail after configuration has been locked.
+You can use multiple calls to <code>daimyo.options()</code> to set an option
+multiple times and it won't lead to locking if the configuration has not been
+locked already.</p>
 
 <p>Althoug using <code>daimyo.option()</code> may sound more convenient, you should set all
 critical core options (including <code>debug</code>, <code>enabled</code>, and <code>sandbox</code>) using the
 <code>daimyo.configure()</code> method for security reasons.</p>
+
+<p>Future version of Daimyo may simply lock any option that has been set once
+without errors using either <code>daimyo.configure()</code> or <code>daimyo.option()</code>, so you
+should not rely on the behavior of <code>daimyo.option()</code> to circumvent
+configuration locking.</p>
 
 <p>Currently, the only exception to configuration locking is the <code>currency</code>
 parameter, which can be set any number of times. Future version of Daimyo may
@@ -253,7 +272,8 @@ Card object use that data.</p>
 
 <p>The card object has following fields:</p>
 
-<ul><li><em>number</em>: card number</li><li><em>csc</em>: card security code (called CCV, CVC, CVV, and various other names)</li><li><em>year</em>: expiration year (if any)</li><li><em>month</em>: expiration month</li><li><em>firstName</em>: card holder's first name</li><li><em>lastName</em>: card holder's last name</li><li><em>address1</em>: billing address line 1</li><li><em>address2</em>: billing address line 2</li><li><em>city</em>: billing address city</li><li><em>state</em>: billing address state/region</li><li><em>zip</em>: billing address zip/postal code</li></ul>
+<ul><li><em>number</em>: card number</li><li><em>csc</em>: card security code (called CCV, CVC, CVV, and various other names)</li><li><em>year</em>: expiration year (if any)</li><li><em>month</em>: expiration month</li><li><em>firstName</em>: card holder's first name</li><li><em>lastName</em>: card holder's last name</li><li><em>address1</em>: billing address line 1</li><li><em>address2</em>: billing address line 2</li><li><em>city</em>: billing address city</li><li><em>state</em>: billing address state/region</li><li><em>zip</em>: billing address zip/postal code</li><li><em>custom</em>: JSON-serializable object containing arbitrary data you may want to
+store with your payment method (e.g., user ID)</li></ul>
 
 <p>You cannot create a card object unless you supply it a payment token, or credit 
 card number and CSC. If you supply it a token, all other fields are ignored. 
@@ -266,12 +286,40 @@ details, you will get one more field:</p>
 <p>The issuer is detected from the card number, and you should not set the field
 manually (or allow the user to set it).</p>
 
+<p>Here is an example of initializing a new card object:</p>
+
+<pre><code>var card = new daimyo.Card({
+  number: '4111-1111-1111-1111',
+  csc: '123',
+  year: 2012,
+  month: 11,
+  firstName: 'John',
+  lastName: 'Doe',
+  address1: '123 Payment St',
+  custom: {
+    email: 'jdoe@example.com',
+    timestamp: new Date();
+  }
+});
+
+// The card now also has an issuer property:
+console.log(card.issuer); // This logs 'Visa'</code></pre>
+
 <h3>Basic validation</h3>
 
-<p>Once you've created the card object, you can test its validity:</p>
+<p>Before you call the <code>create</code> method, you can perform basic validation to
+increase the likelyhood of successful transaction.</p>
 
 <pre><code>card.isValid(); // returns true if card is valid
 card.isExpired(); // returns true if expired</code></pre>
+
+<p>In addition to these two methods, you should generally ensure that user
+supplies correct address and zip code (or postal number), and that expiration
+date is in future. Note that you are allowed to forward the expiration date 
+into future, as banks do not usually check if it's correct as long as it's in
+future. Generally, the more data you supply, your liability will be lower, so 
+it's a good idea to supply as much data as possible to the gateway if you
+cannot trust your users 100%.</p>
 
 <h3>Creating the payment method server-side</h3>
 
@@ -284,6 +332,28 @@ that like so:</p>
   // Card now has a payment method token associated with it
   console.log(card.token);
 });</code></pre>
+
+<p>If there are any errors during the creation process, they will be passed to the 
+callback function. The error object will have following properties:</p>
+
+<ul><li><em>category</em>: Category of the error ('system' in most cases)</li><li><em>message</em>: Error message</li><li><em>details</em>: Any data that give you more details about the error</li></ul>
+
+<p>Common error messages may include:</p>
+
+<ul><li>'Error making create payment method request': Daimyo is not properly
+configured (e.g., missing Samurai gateway credentials), or the request
+failed for some reason and the response was unreadable (e.g., Samurai was
+offline)</li><li>'Gateway responded with non-302 status': This is rare, but means that
+Samurai received malformed data. If this happens, please report it as a bug.</li><li>'Gateway failed to send the location header': This is a Samurai bug, but
+report it to us anyway.</li></ul>
+
+<p>In any case, you should consider receiving an error object with 'system'
+category a critical failure, and act accordingly. Depending on the nature of
+the error, you may want to retry, too.</p>
+
+<p>It is important to note that error related to the actual card information will
+<em>not</em> be passed in error object. These will be available once you load the card
+from the gateway, or when you make a transaction.</p>
 
 <h3>Loading the payment method</h3>
 
@@ -303,7 +373,25 @@ card.load(function(err) {
 
 <ul><li>messages: contains any Samurai gateway messages about the card</li><li>method: contains meta-information about the payment method</li></ul>
 
-<p>See the API documentation for details on what these fields contain.</p>
+<p>See the API documentation for details on what these fields contain. The error
+object passed to the callback has the same format as the error object passed to
+the <code>create</code> method. All methods except <code>create</code> also have two more possible
+error messages:</p>
+
+<ul><li>'Cannot ACTION payment method without token': (where ACTION is the action
+you were trying to perform), this means that no token was provided and
+action requires a valid payment method token.</li><li>'Loaded token does not equal the token that was requested': Gateway
+responded with a token that does not match our token. This indicates a high
+likelyhood of MITM attack, and you should immediately take the site offline
+and perform security checks and forensic analysis to ensure no sensitive
+data has been leaked. (Note that you will not be able to easily uncover a
+<em>successful</em> MITM attack.)</li></ul>
+
+<p>In addition, the following error is different from the <code>create</code> method:</p>
+
+<ul><li>'Gateway responded with non-200 status': This means that the request was
+malformed, and it is most likely due to a Daimyo bug. Please report full
+error details along with your bug report.</li></ul>
 
 <h3>Updating the payment method</h3>
 
@@ -317,6 +405,8 @@ card.city = 'Fooville';
 card.update(function(err) {
   // Handle errors here
 });</code></pre>
+
+<p>Error messages are the same ones expected in <code>load</code> method callback.</p>
 
 <h3>Retention and redaction</h3>
 
@@ -355,7 +445,72 @@ effiicient, if you are using the transparent redirect method, you should
 redact the old card, and let the user enter a new one. Only use <code>update()</code> if 
 you are using the server-to-server method.</p>
 
-<p>REST OF THE DOCS IS ON TODO LIST, SORRY!</p></td><td></td></tr><tr class="filename"><td><h2 id="lib/config.js"><a href="#">config</a></h2></td><td>lib/config.js</td></tr><tr class="code">
+<p>Again, error messages are the same as ones for the <code>load</code> and <code>update</code>
+methods.</p>
+
+<h3>Making transactions</h3>
+
+<p>Transactions are made using the <code>daimyo.Transaction</code> constructor and resulting
+transaction objects.</p>
+
+<p>There are currenly 5 transaction types supported by Samurai: </p>
+
+<ul><li><em>purchase</em>: make immediate authorization and capture of the funds
+(immediately debit the user's credit card)</li><li><em>authorize</em>: instruct the bank to put a hold on specified amount (the funds
+are reserved, but you do not get the money until you capture)</li><li><em>capture</em>: capture the funds that have been authorized</li><li><em>void</em>: void a previously authorized transaction (this releases the hold on
+the funds)</li><li><em>credit</em>: reverse the capture (return funds to the user's card in the amount
+that has been captured via <em>capture</em> or <em>purchase</em>).</li></ul>
+
+<p>The transaction object constructor takes an object with transaction options, 
+and the <code>type</code> option selects one of the transaction types. Depending on the
+transaction type, other options may differ.</p>
+
+<h4>Purchase and Authorize transactions</h4>
+
+<p>For purchase and authorize transactions, options other than <code>type</code> are the
+following:</p>
+
+<ul><li><em>amount</em>: The transaction amount</li><li><em>currency</em>: Optional (defaults to the one set in your initial configuration)</li><li><em>billingReference</em></li><li><em>customerReference</em></li><li><em>descriptor</em>: description of transaction that will appear in the user's bank
+statement (if supported by the bank)</li><li><em>custom</em>: JSON-serializable object containing any data you want to attack to
+a transaction</li></ul>
+
+<h4>Capture, Void, and Credit transactions</h4>
+
+<p>These transactions require none of the extra options required by the purchase
+and authorize transactions. Instead they require a transaction ID (returned by
+successful purchase/authorize transactions, see details further below).</p>
+
+<ul><li><em>transactionId</em></li></ul>
+
+<p>In addition, capture and credit take an <code>amount</code> option.</p>
+
+<h4>Transaction data locking</h4>
+
+<p>Transaction data cannot be modified after the transaction object is
+initialized. This is done to prevent tampering by malicious code.</p>
+
+<h4>Processing transactions</h4>
+
+<p>Transaction constructor will not check if you have specified the appropriate
+options depending on the type of tranasaction. You are expected to be mindful
+about what options are passed.</p>
+
+<p>Once you have created the transaction object, you will also need a card object
+with a <code>token</code> (card has a token after creation, or after load).</p>
+
+<p>Given a transaction object, you can now:</p>
+
+<p>   transaction.process(card, function(err) {
+     // Success!
+   });</p>
+
+<p>Once the transaction is completed, and there are no errors, the transaction
+object will gain a <code>receipt</code> property which should contain data about the
+transaction, including <code>transactionId</code>, and <code>success</code> property. The latter
+tells you if the transaction was successful.</p>
+
+<p>In addition, transaction object will contain a <code>messages</code> property, which will
+contain more details about the transaction if it failed.</p></td><td></td></tr><tr class="filename"><td><h2 id="lib/config.js"><a href="#">config</a></h2></td><td>lib/config.js</td></tr><tr class="code">
 <td class="docs">
 <h1>config</h1>
 
@@ -397,8 +552,9 @@ to access and set the settings is through either <code>configure()</code> or
 <p>Settings are expected to contain following keys with their default values:</p>
 
 <ul><li><em>merchantKey</em>: Samurai gateway Merchant Key (default: <code>''</code>)</li><li><em>apiPassword</em>: Samurai gateway API Password (default: <code>''</code>)</li><li><em>processorId</em>: Processor (gateway) ID; be sure to set this to a sandbox
-ID for testing(default: <code>''</code>)</li><li><em>currency</em>: Default currency for all transactions (can be overriden by
-specifying the appropriate options in transaction objects)</li><li><em>sandbox</em>: All new payment methods will be sandbox payment methods 
+ID for testing (default: <code>''</code>)</li><li><em>currency</em>: Default currency for all transactions (can be overriden by
+specifying the appropriate options in transaction objects)</li><li><em>allowedCurrencies</em>: Array containing the currencies that can be used
+in transactions. (default: ['USD'])</li><li><em>sandbox</em>: All new payment methods will be sandbox payment methods 
 (default: false)</li><li><em>enabled</em>: Whether to actually make requests to gateway (default: true)</li><li><em>debug</em>: Whether to log to STDOUT; it is highly recommended that 
 you disable this in production, to remain PCI comliant, and to 
 avoid performance issues (default: true)</li></ul>
@@ -416,6 +572,7 @@ treated as a constant (i.e., read-only).
 <span class="variable">settings</span>.<span class="variable">apiPassword</span> = <span class="string">''</span>;
 <span class="variable">settings</span>.<span class="variable">processorId</span> = <span class="string">''</span>;
 <span class="variable">settings</span>.<span class="variable">currency</span> = <span class="string">'USD'</span>;
+<span class="variable">settings</span>.<span class="variable">allowedCurrencies</span> = [<span class="string">'USD'</span>];
 <span class="variable">settings</span>.<span class="variable">sandbox</span> = <span class="variable">false</span>;
 <span class="variable">settings</span>.<span class="variable">enabled</span> = <span class="variable">true</span>; <span class="comment">// Does not make any actual API calls if false</span>
 <span class="variable">settings</span>.<span class="variable">debug</span> = <span class="variable">false</span>; <span class="comment">// Enables *blocking* debug output to STDOUT</span>
@@ -518,6 +675,15 @@ do not appear to be valid keys, an error will be thrown.</p>
     <span class="keyword">case</span> <span class="string">'debug'</span>:
     <span class="keyword">case</span> <span class="string">'allowMultipleSetOption'</span>:
       <span class="variable">settings</span>[<span class="variable">option</span>] = <span class="class">Boolean</span>(<span class="variable">value</span>);
+      <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="string">'allowedCurrencies'</span>:
+      <span class="keyword">if</span> (!<span class="class">Array</span>.<span class="variable">isArray</span>(<span class="variable">value</span>)) {
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Allowed currencies must be an array'</span>, <span class="keyword">null</span>);
+      }
+      <span class="keyword">if</span> (<span class="variable">value</span>.<span class="variable">indexOf</span>(<span class="variable">settings</span>.<span class="variable">currency</span>) &<span class="variable">lt</span>; <span class="number integer">0</span>) {
+        <span class="variable">value</span>.<span class="variable">push</span>(<span class="variable">settings</span>.<span class="variable">currency</span>);
+      }
+      <span class="variable">settings</span>.<span class="variable">allowedCurrencies</span> = <span class="variable">value</span>;
       <span class="keyword">break</span>;
     <span class="keyword">default</span>:
       <span class="comment">// Do not allow unknown options to be set</span>
@@ -1370,11 +1536,26 @@ effectively like doing a <code>card.load()</code>. Refer to documentaiton for th
   <span class="keyword">var</span> <span class="variable">transactionData</span>;
   
   <span class="keyword">if</span> (!<span class="variable">card</span> || !<span class="variable">card</span>.<span class="variable">token</span>) {
-    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Card has no token'</span>, <span class="keyword">null</span>);
+    <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(<span class="string">'system'</span>, <span class="string">'Card has no token'</span>, <span class="keyword">null</span>));
+    <span class="keyword">return</span>;
   }
 
   <span class="comment">// Augment transaction data with token</span>
   <span class="variable">transactionData</span> = <span class="variable">self</span>.<span class="variable">data</span>;
+
+  <span class="comment">// Currency check</span>
+  <span class="keyword">if</span> (<span class="variable">transactionData</span>.<span class="variable">currency</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>;
+      <span class="variable">config</span>.<span class="variable">option</span>(<span class="string">'allowedCurrencies'</span>).<span class="variable">indexOf</span>(<span class="variable">transactionData</span>.<span class="variable">currency</span>) &<span class="variable">lt</span>; <span class="number integer">0</span>) {
+    
+    <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(
+      <span class="string">'system'</span>, 
+      <span class="string">'Currency not allowed'</span>, 
+      <span class="variable">transactionData</span>.<span class="variable">currency</span>
+    ));
+    <span class="keyword">return</span>;
+
+  }
+
 
   <span class="keyword">if</span> (!<span class="variable">transactionData</span>.<span class="variable">custom</span>) {
     <span class="variable">transactionData</span>.<span class="variable">custom</span> = {};
