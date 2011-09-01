@@ -8,7 +8,7 @@
       html { background: url('images/background.png'); }
       body { width: 750px; margin: 0 auto; padding: 0 2em 4em; }
       a { text-decoration: none; }
-      h1 { background: url('images/logo.png') no-repeat; text-indent: -9999px; overflow: hidden; width: 201px; height: 257px; position: relative; top: -50px; float: left; }
+      h1 { background: url('images/logo.png') no-repeat; text-indent: -9999px; overflow: hidden; width: 201px; height: 311px; position: relative; top: -50px; float: left; }
       h2, h3 { font-family: Arial, Helvetica, sans-serif; }
       h2 { margin-top: 2em; color: #aa0000; }
       h3 { font-size: 100%; }
@@ -30,36 +30,36 @@
         <li><a href="docs/0.0.2.html">v0.0.2</a></li>
         <li><a href="docs/0.0.1.html">v0.0.1</a></li>
       </ul>
+      <h2>Maintainer</h2>
+      <ul>
+        <li><a href="mailto:branko@herdhound.com">Branko Vukelic</a> (<a href="http://www.herdhound.com/">Herd Hound</a>)</li>
+      </ul>
       <h2>Installation</h2>
       <pre><code>npm install daimyo</code></pre>
       <h2>FAQ</h2>
+      <h3>Where can I get Daimyo?</h3>
+      <p>You can get Daimyo <a href="http://search.npmjs.org/#/daimyo">via npm</a>, or <a href="https://github.com/HerdHound/Daimyo">via GitHub</a></p>
       <h3>Why should I use Daimyo and not Samurai API directly?</h3>
       <p>If you want to use the API directly, sure. I won't stand in your way. In fact it may be a good idea to first try the raw API, just to get a feel of how badly you want to use Daimyo!</p>
       <h3>Is Daimyo PCI compliant?</h3>
-      <p>No. Daimyo itself is not atested for PCI-compliance, but you can use Samurai (and Daimyo) in ways that make PCI irrelevant for you.And you don't want to know what I think of PCI. Also, Daimyo is quite new so it should not be considered otherwise secure yet. When it reaches version 0.1, though, it should be pretty secure and battle-tested.</p>
-      <h3>So what DO you think about PCI?</h3>
-      <p>Next question!</p>
+      <p>No. Daimyo itself is not atested for PCI-compliance, but you can use Samurai (and Daimyo) in ways that make PCI irrelevant for you. Also, Daimyo is quite new so it should not be considered otherwise secure yet. When it reaches version 0.1, though, it should be pretty secure and battle-tested.</p>
       <h3>Does it mean that Daimyo is not secure?</h3>
-      <p>A lot of work has been done on securing Daimyo, not even against unvalidated user input, but also against potential API misuse by malicious code or accident. However, the work on security is still not quite done. Current target for <em>the</em> paranoid implementation is v0.1.</p>
+      <p>A lot of work has been done on securing Daimyo, not only against unvalidated user input, but also against potential API misuse by malicious code or accident. However, the work on security is still not quite done. Current target for <em>the</em> paranoid implementation is v0.1.</p>
       <h3>Should I use the pre-release version?</h3>
-      <p>Only if you're retarded. Seriously, though. No, please don't use the pre-release version and come to me with a story of lost millions in profit and reputation. I push all kinds of shitty code (pardon me, but I could not find a better term) and then come back later and fix it. And if you use the shitty version, well... bad timing. So you should generally stick to slightly less shitty release versions.
+      <p>No, please don't use the pre-release version and file a story of lost millions in profit and reputation as bug report. The pre-release version (latest commits on GitHub) usually contain untested code that are almost guaranteed to fail. You should generally stick to released versions.</p>
       <h3>But pre-release version has this awesome feature X!</h3>
-      <p>Yes, it sure does. Next question!</p>
+      <p>Yes, it sure does. In some cases, it may also contain fixes for known issues. But that does not mean it does not also contain new issues. (In fact, it usually does.)</p>
       <h3>Should I use the <code>daimyo.Card.create()</code> method?</h3>
-      <p>Only use this method if you are reasonably confident that you will be able to achieve full PCI compliance. In other words, you should generally avoid doing that.</p>
-      <h3>Where can I get Daimyo?</h3>
-      <p>You can get Daimyo <a href="http://search.npmjs.org/#/daimyo">via npm</a>, or <a href="https://github.com/HerdHound/Daimyo">via GitHub</a>
+      <p>Only use this method if you are reasonably confident that you will be able to achieve full PCI compliance. In other words, you should generally avoid doing that. Fines for failing to comply with PCI are scary, and nobody has gotten away with it so far.</p>
       <h3>I found a bug!</h3>
       <p>Hey, thanks for that! Please report it in the <a href="https://github.com/HerdHound/Daimyo/issues">issue tracker</a>. When filing a bug, please try to include as much information as possible. Most helpful information is the piece of code that triggered the error, maybe a small test app (or even better, a unit test!), and your configuration. Oh, and don't forget the exact error message.</p>
       <h3>I want feature X. Can I file an issue for that?</h3>
       <p>Yes, please!</p>
-      <h3>I have some personal issues. Can I file that as well?</h3>
+      <h3>I have some personal issues. Can I file those as well?</h3>
       <p>No.</p>
-      <h3>But it <em>is</em> an issue tracker isn't it?</h3>
-      <p>Next question!</p>
       <h3>I have a patch. Can I send you a pull request?</h3>
-      <p>Only if it has inline documentation and tests that actually pass. Nah. That was just to scare you. But seriously, tests and docs would be highly appreciated. Also, indent the code with 2 spaces, not 4, and no tabs please. Anyway, take a look at my code and you'll get the idea of what's required.</p>
+      <p>Generally, yes. Tests and docs would be highly appreciated, though, so please try to send them along with the patch. Also, indent the code with 2 spaces, not 4, and no tabs please. Take a look at the source code and you'll get the idea of what's required.</p>
       <h2>Who uses Diamyo?</h2>
-      <p>Me and Santa. If you use it too, join us! <a href="mailto:branko@herdhound.com">email</a> me and I'll add you to the list here.</p>
+      <p>Daimyo is currently used by <a href="http://www.herdhound.com/">Herd Hound</a>. If you use it too, join us! <a href="mailto:branko@herdhound.com">email</a> me and I'll add you to the list here.</p>
     </div>
 </html>
