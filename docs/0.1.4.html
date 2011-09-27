@@ -529,36 +529,7 @@ transaction, including <code>transactionId</code>, and <code>success</code> prop
 tells you if the transaction was successful.</p>
 
 <p>In addition, transaction object will contain a <code>messages</code> property, which will
-contain more details about the transaction if it failed.</p>
-
-<h4>AVS status messages</h4>
-
-<p>AVS (Address Verification System) can return as many as 26 different messages.
-If you simply want to know if the address was verified or not, you can check if
-<code>transaction.messages.errors</code> object contains an <code>address</code> key:</p>
-
-<pre><code>transaction.process(card, function(err) {
-  if (transaction.messages.error &amp;&amp; transaction.messages.error.address) {
-    console.error('AVS check failed!');
-  }
-});</code></pre>
-
-<p>In some cases, AVS will fail despite the card being valid. This is a common
-case with non-US cards, or when the issuing bank doesn't support AVS. You can
-test these conditions by checking the first character of the avs message:</p>
-
-<pre><code>transaction.process(card, function(err) {
-  var inf = transaction.messages.info || {};
-  if (inf &amp;&amp; inf.avs &amp;&amp; ['G','E','S','U'].indexOf(inf.avs[0][0] &gt; -1) {
-    // Try updating the card by removing the address
-    // (but not postal code!)
-  } else if (inf &amp;&amp; inf.avs) {
-    // Transaction failed because of AVS
-  }
-});</code></pre>
-
-<p>For more information on AVS, check the 
-<a href="http://en.wikipedia.org/wiki/Address_Verification_System">Wikipedia aticle</a>.</p></td><td></td></tr><tr class="filename"><td><h2 id="lib/config.js"><a href="#">config</a></h2></td><td>lib/config.js</td></tr><tr class="code">
+contain more details about the transaction if it failed.</p></td><td></td></tr><tr class="filename"><td><h2 id="lib/config.js"><a href="#">config</a></h2></td><td>lib/config.js</td></tr><tr class="code">
 <td class="docs">
 <h1>config</h1>
 
@@ -582,7 +553,7 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 <span class="keyword">var</span> <span class="variable">samurayKeyRe</span> = <span class="regexp">/^[0-9a-f]{24}$/</span>;
 <span class="keyword">var</span> <span class="variable">isConfigured</span> = <span class="variable">false</span>;
 
-<span class="variable">config</span>.<span class="class">DAIMYO_VERSION</span> = <span class="string">'0.1.5'</span>;</code></pre>
+<span class="variable">config</span>.<span class="class">DAIMYO_VERSION</span> = <span class="string">'0.1.1'</span>;</code></pre>
 </td>
 </tr>
 <tr class="code">
@@ -1411,7 +1382,7 @@ Vukelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><
 </td>
 <td class="code">
 <pre><code><span class="keyword">function</span> <span class="variable">getTransactionPath</span>(<span class="variable">type</span>, <span class="variable">transactionId</span>) {
-  <span class="keyword">var</span> <span class="variable">subpath</span> = <span class="string">'/processors/'</span>;
+  <span class="keyword">var</span> <span class="variable">subpath</span> = <span class="string">'/gateways/'</span>;
   <span class="keyword">if</span> (<span class="variable">transactionId</span>) {
     <span class="variable">subpath</span> = <span class="string">'/transactions/'</span>;
   }
@@ -1675,8 +1646,7 @@ omit the first argument.</p>
       <span class="variable">callback</span>(<span class="keyword">new</span> <span class="class">DaimyoError</span>(
         <span class="string">'system'</span>,
         <span class="string">'Gateway responded with non-200 status'</span>,
-        {<span class="variable">status</span>: <span class="variable">res</span>.<span class="variable">status</span>, <span class="variable">body</span>: <span class="variable">res</span>.<span class="variable">body</span>, 
-         <span class="variable">messages</span>: <span class="variable">err</span> &<span class="variable">amp</span>;&<span class="variable">amp</span>; <span class="variable">messages</span>.<span class="variable">translateAll</span>(<span class="variable">err</span>.<span class="variable">details</span>)}
+        {<span class="variable">status</span>: <span class="variable">res</span>.<span class="variable">status</span>, <span class="variable">body</span>: <span class="variable">res</span>.<span class="variable">body</span>, <span class="variable">messages</span>: <span class="variable">messages</span>.<span class="variable">translateAll</span>(<span class="variable">err</span>.<span class="variable">details</span>)}
       ));
       <span class="keyword">return</span>;
     }
@@ -1775,7 +1745,7 @@ call Ashigaru like this:</p>
 should make sure you handle such unforeseen problems yourself.</p>
 
 <ul><li><strong>version</strong>: <em>0</em>
-.1.5</li><li><strong>author</strong>: <em>Branko</em>
+.1.1</li><li><strong>author</strong>: <em>Branko</em>
 Vurkelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li><strong>license</strong>: <em>MIT</em>
 (see LICENSE)</li></ul>
 </td>
@@ -1783,7 +1753,7 @@ Vurkelic <a href="mailto:branko@herdhound.com">branko@herdhound.com</a></li><li>
 <pre><code>(<span class="keyword">function</span>($, <span class="class">JSON</span>, <span class="variable">window</span>) {
 
   <span class="keyword">var</span> <span class="variable">originalDomain</span> = <span class="variable">window</span>.<span class="variable">document</span>.<span class="variable">domain</span>;
-  <span class="keyword">var</span> <span class="variable">samuraiURI</span> = <span class="string">'https://api.samurai.feefighters.com/v1/payment_methods'</span>;
+  <span class="keyword">var</span> <span class="variable">samuraiURI</span> = <span class="string">'https://samurai.feefighters.com/v1/payment_methods'</span>;
   <span class="keyword">var</span> <span class="variable">timeoutLabel</span>;
   <span class="keyword">var</span> <span class="variable">timedOut</span> = <span class="variable">false</span>;
   <span class="keyword">var</span> <span class="variable">dataReceived</span> = <span class="variable">false</span>;
